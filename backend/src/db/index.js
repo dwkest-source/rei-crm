@@ -32,6 +32,8 @@ const initDB = async () => {
         bedrooms NUMERIC(4,1),
         bathrooms NUMERIC(4,1),
         sqft INTEGER,
+        lot_sqft INTEGER,
+        property_notes TEXT,
         
         -- Owner Info
         owner_first_name VARCHAR(255),
@@ -73,6 +75,8 @@ const initDB = async () => {
         bedrooms NUMERIC(4,1),
         bathrooms NUMERIC(4,1),
         sqft INTEGER,
+        lot_sqft INTEGER,
+        property_notes TEXT,
         sort_order INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT NOW()
       );
@@ -116,6 +120,8 @@ const initDB = async () => {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS bedrooms NUMERIC(4,1);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS bathrooms NUMERIC(4,1);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS sqft INTEGER;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS lot_sqft INTEGER;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS property_notes TEXT;
     `);
     console.log('Database initialized successfully');
   } finally {

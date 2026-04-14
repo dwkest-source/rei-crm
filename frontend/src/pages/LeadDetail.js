@@ -58,9 +58,19 @@ export default function LeadDetail() {
   const [taskForm, setTaskForm] = useState({ title:'', description:'', due_date:'', priority:'Medium', assigned_to:'' });
   const [users, setUsers] = useState([]);
   const [editingTask, setEditingTask] = useState(null);
+  const [propDetails, setPropDetails] = useState(null); // {bedrooms, bathrooms, sqft, lot_sqft, property_notes}
+  const [savingProp, setSavingProp] = useState(false);
+
+  const initPropDetails = (l) => ({
+    bedrooms: l.bedrooms || '',
+    bathrooms: l.bathrooms || '',
+    sqft: l.sqft || '',
+    lot_sqft: l.lot_sqft || '',
+    property_notes: l.property_notes || '',
+  });
 
   const load = useCallback(async () => {
-    try { const data = await api.getLead(id); setLead(data); }
+    try { const data = await api.getLead(id); setLead(data); setPropDetails(initPropDetails(data)); }
     catch { navigate('/leads'); }
     finally { setLoading(false); }
   }, [id, navigate]);
@@ -69,6 +79,13 @@ export default function LeadDetail() {
   useEffect(() => { api.getUsers().catch(() => []).then(u => setUsers(u || [])); }, []);
 
   const handleStatusChange = async (status) => { await api.updateLead(id, { status }); setLead(l => ({ ...l, status })); };
+  const handleSavePropDetails = async () => {
+    setSavingProp(true);
+    try {
+      await api.updateLead(id, propDetails);
+      setLead(l => ({ ...l, ...propDetails }));
+    } finally { setSavingProp(false); }
+  };
   const handleAddNote = async (e) => {
     e.preventDefault(); if (!noteText.trim()) return; setAddingNote(true);
     try { const note = await api.addNote(id, { content: noteText }); setLead(l => ({ ...l, notes: [note, ...l.notes] })); setNoteText(''); }
@@ -204,10 +221,40 @@ export default function LeadDetail() {
               </div>
             )}
             <InfoRow label="Type" value={lead.property_type} />
-            {(lead.bedrooms || lead.bathrooms || lead.sqft) && (
-              <InfoRow label="Bed / Bath / Sqft"
-                value={[lead.bedrooms ? lead.bedrooms+'bd' : null, lead.bathrooms ? lead.bathrooms+'ba' : null, lead.sqft ? Number(lead.sqft).toLocaleString()+' sqft' : null].filter(Boolean).join(' · ')} />
-            )}
+            {propDetails && <>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
+                {[
+                  { label:'Beds', key:'bedrooms', placeholder:'3' },
+                  { label:'Baths', key:'bathrooms', placeholder:'2' },
+                  { label:'Sqft', key:'sqft', placeholder:'1800' },
+                  { label:'Lot Sqft', key:'lot_sqft', placeholder:'6000' },
+                ].map(({ label, key, placeholder }) => (
+                  <div key={key}>
+                    <div style={{ fontSize:10, color:'var(--text3)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:3 }}>{label}</div>
+                    <input
+                      className="form-input"
+                      style={{ padding:'4px 8px', fontSize:13 }}
+                      type="number"
+                      placeholder={placeholder}
+                      value={propDetails[key]}
+                      onChange={e => setPropDetails(p => ({ ...p, [key]: e.target.value }))}
+                      onBlur={handleSavePropDetails}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
+                <div style={{ fontSize:10, color:'var(--text3)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>Property Notes</div>
+                <textarea
+                  className="form-input"
+                  style={{ fontSize:12, minHeight:64, resize:'vertical' }}
+                  placeholder="Condition, access notes, anything relevant..."
+                  value={propDetails.property_notes}
+                  onChange={e => setPropDetails(p => ({ ...p, property_notes: e.target.value }))}
+                  onBlur={handleSavePropDetails}
+                />
+              </div>
+            </>}
 
             {lead.properties?.length > 0 && <>
               {lead.properties.map((p, i) => (
