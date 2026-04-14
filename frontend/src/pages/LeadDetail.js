@@ -375,7 +375,7 @@ export default function LeadDetail() {
                         <input className="form-input" value={taskForm.title} onChange={e => setTaskForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Follow up call" required autoFocus /></div>
                       <div className="grid grid-2" style={{ gap:10 }}>
                         <div className="form-group"><label className="form-label">Due Date</label>
-                          <input className="form-input" type="datetime-local" value={taskForm.due_date} onChange={e => setTaskForm(f=>({...f,due_date:e.target.value}))} /></div>
+                          <input className="form-input" type="date" value={taskForm.due_date ? taskForm.due_date.slice(0,10) : ''} onChange={e => setTaskForm(f=>({...f,due_date:e.target.value}))} /></div>
                         <div className="form-group"><label className="form-label">Priority</label>
                           <select className="form-input" value={taskForm.priority} onChange={e => setTaskForm(f=>({...f,priority:e.target.value}))}>
                             {PRIORITIES.map(p => <option key={p}>{p}</option>)}</select></div>

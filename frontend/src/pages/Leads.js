@@ -9,7 +9,7 @@ const STATUSES = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'
 const SOURCES = ['Direct Mail','Cold Call','Cold Text','LaunchControl','Driving for Dollars','Referral','Website','MLS','Wholesaler','Other'];
 
 const getStatusClass = (s) => {
-  const map = { 'New Lead': 'status-new','Contacted': 'status-contacted','Warm': 'status-warm','Hot': 'status-hot','Negotiating': 'status-negotiating','Under Contract': 'status-under-contract','Closed': 'status-closed','Dead': 'status-dead' };
+  const map = { 'New Lead': 'status-new', 'Post-Appointment': 'status-warm', 'Under Contract': 'status-under-contract', 'Closed': 'status-closed', 'Dead': 'status-dead' };
   return map[s] || 'status-new';
 };
 
