@@ -4,10 +4,10 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { TrendingUp, Users2, CheckSquare, AlertCircle, Plus } from 'lucide-react';
 
-const STATUS_ORDER = ['New Lead','Contacted','Warm','Hot','Negotiating','Under Contract','Closed','Dead'];
+const STATUS_ORDER = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
 
 const getStatusClass = (s) => {
-  const map = { 'New Lead': 'status-new', 'Contacted': 'status-contacted', 'Warm': 'status-warm', 'Hot': 'status-hot', 'Negotiating': 'status-negotiating', 'Under Contract': 'status-under-contract', 'Closed': 'status-closed', 'Dead': 'status-dead' };
+  const map = { 'New Lead': 'status-new', 'Post-Appointment': 'status-warm', 'Under Contract': 'status-under-contract', 'Closed': 'status-closed', 'Dead': 'status-dead' };
   return map[s] || 'status-new';
 };
 

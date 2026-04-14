@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import LeadModal from '../components/LeadModal';
 
-const STATUSES = ['New Lead','Contacted','Warm','Hot','Negotiating','Under Contract','Closed','Dead'];
+const STATUSES = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
 const SOURCES = ['Direct Mail','Cold Call','Cold Text','LaunchControl','Driving for Dollars','Referral','Website','MLS','Wholesaler','Other'];
 
 const getStatusClass = (s) => {
@@ -79,16 +79,13 @@ export default function Leads() {
                 <th>Phone</th>
                 <th>Source</th>
                 <th>Status</th>
-                <th>Asking Price</th>
-                <th>ARV</th>
-                <th>Notes</th>
-                <th>Tasks</th>
+                <th>Open Tasks</th>
                 <th>Updated</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={10} className="table-empty">Loading...</td></tr>}
-              {!loading && leads.length === 0 && <tr><td colSpan={10} className="table-empty">No leads found. Add your first lead!</td></tr>}
+              {loading && <tr><td colSpan={7} className="table-empty">Loading...</td></tr>}
+              {!loading && leads.length === 0 && <tr><td colSpan={7} className="table-empty">No leads found. Add your first lead!</td></tr>}
               {leads.map(lead => (
                 <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)}>
                   <td style={{ fontWeight: 600 }}>{lead.owner_first_name || ''} {lead.owner_last_name || ''}</td>
@@ -96,9 +93,6 @@ export default function Leads() {
                   <td>{lead.owner_phone || '—'}</td>
                   <td><span className="source-badge">{lead.source || '—'}</span></td>
                   <td><span className={`status-badge ${getStatusClass(lead.status)}`}>{lead.status}</span></td>
-                  <td>{fmt(lead.asking_price)}</td>
-                  <td>{fmt(lead.estimated_arv)}</td>
-                  <td>{lead.note_count || 0}</td>
                   <td>{lead.open_tasks || 0}</td>
                   <td style={{ color: 'var(--text3)', fontSize: 12 }}>{new Date(lead.updated_at).toLocaleDateString()}</td>
                 </tr>

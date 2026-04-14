@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { X } from 'lucide-react';
 
-const STATUSES = ['New Lead','Contacted','Warm','Hot','Negotiating','Under Contract','Closed','Dead'];
+const STATUSES = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
 const SOURCES = ['Direct Mail','Cold Call','Cold Text','LaunchControl','Driving for Dollars','Referral','Website','MLS','Wholesaler','Other'];
 const PROPERTY_TYPES = ['Single Family','Multi-Family','Duplex','Triplex','Fourplex','Condo','Townhouse','Mobile Home','Land','Commercial','Other'];
 const STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
@@ -14,6 +14,7 @@ export default function LeadModal({ lead, onClose, onSaved }) {
   const [error, setError] = useState('');
   const [form, setForm] = useState({
     owner_first_name: '', owner_last_name: '', owner_email: '', owner_phone: '', owner_phone2: '', owner_phone3: '',
+    bedrooms: '', bathrooms: '', sqft: '',
     owner_mailing_address: '', owner_mailing_city: '', owner_mailing_state: '', owner_mailing_zip: '',
     property_address: '', property_city: '', property_state: '', property_zip: '', property_type: '',
     source: '', status: 'New Lead', motivation: '',
@@ -115,6 +116,9 @@ export default function LeadModal({ lead, onClose, onSaved }) {
                   {inp('property_zip', 'ZIP', { placeholder: '85251' })}
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>{sel('property_type', 'Property Type', PROPERTY_TYPES)}</div>
+                {inp('bedrooms', 'Beds', { type: 'number', placeholder: '3' })}
+                {inp('bathrooms', 'Baths', { type: 'number', placeholder: '2' })}
+                <div style={{ gridColumn: 'span 2' }}>{inp('sqft', 'Square Footage', { type: 'number', placeholder: '1800' })}</div>
               </div>
             )}
 
