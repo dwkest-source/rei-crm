@@ -7,6 +7,7 @@ export default function AddressAutocomplete({ value, onChange, onSelect, placeho
 
   useEffect(() => {
     const apiKey = process.env.REACT_APP_GOOGLE_PLACES_KEY;
+    console.log('Google Places API Key present:', !!apiKey, apiKey ? apiKey.slice(0,8)+'...' : 'MISSING');
     if (!apiKey) return;
 
     // Load Google Maps script if not already loaded
@@ -31,13 +32,15 @@ export default function AddressAutocomplete({ value, onChange, onSelect, placeho
     script.id = scriptId;
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
-    script.onload = () => setLoaded(true);
+    script.onload = () => { console.log('Google Maps script loaded'); setLoaded(true); };
+    script.onerror = (e) => console.error('Google Maps script failed to load', e);
     document.head.appendChild(script);
   }, []);
 
   useEffect(() => {
+    console.log('Autocomplete effect, loaded:', loaded, 'input:', !!inputRef.current);
     if (!loaded || !inputRef.current) return;
-
+    console.log('Initializing autocomplete...');
     autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
       types: ['address'],
       componentRestrictions: { country: 'us' },
