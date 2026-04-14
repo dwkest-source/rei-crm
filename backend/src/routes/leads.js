@@ -106,7 +106,7 @@ router.post('/', auth, async (req, res) => {
     'owner_first_name','owner_last_name','owner_email','owner_phone','owner_phone2','owner_phone3',
     'owner_mailing_address','owner_mailing_city','owner_mailing_state','owner_mailing_zip',
     'source','status','motivation','asking_price','estimated_arv','estimated_repair','offer_price',
-    'campaign','list_name','assigned_to','bedrooms','bathrooms','sqft'
+    'campaign','list_name','assigned_to','bedrooms','bathrooms','sqft','lot_sqft','property_notes'
   ];
   try {
     const cols = ['created_by'];
@@ -145,7 +145,7 @@ router.patch('/:id', auth, async (req, res) => {
     'owner_first_name','owner_last_name','owner_email','owner_phone','owner_phone2','owner_phone3',
     'owner_mailing_address','owner_mailing_city','owner_mailing_state','owner_mailing_zip',
     'source','status','motivation','asking_price','estimated_arv','estimated_repair','offer_price',
-    'campaign','list_name','assigned_to','bedrooms','bathrooms','sqft'
+    'campaign','list_name','assigned_to','bedrooms','bathrooms','sqft','lot_sqft','property_notes'
   ];
   try {
     const updates = [];
