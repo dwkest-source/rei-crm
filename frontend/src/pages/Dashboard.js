@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { TrendingUp, Users2, CheckSquare, AlertCircle, Plus } from 'lucide-react';
+import { TrendingUp, Users2, CheckSquare, AlertCircle, Plus, Clock } from 'lucide-react';
 
 const STATUS_ORDER = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
 
@@ -39,8 +39,11 @@ export default function Dashboard() {
   }, []);
 
   const totalLeads = stats?.byStatus?.reduce((a, b) => a + parseInt(b.count), 0) || 0;
-  const hotLeads = stats?.byStatus?.find(s => s.status === 'Hot')?.count || 0;
   const closedLeads = stats?.byStatus?.find(s => s.status === 'Closed')?.count || 0;
+  const now = new Date();
+  const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
+  const tasksToday = dueTasks.filter(t => { const d = new Date(t.due_date); return d >= now && d <= todayEnd; }).length;
+  const overdueTasks = dueTasks.filter(t => new Date(t.due_date) < now).length;
 
   return (
     <div className="page">
@@ -56,12 +59,15 @@ export default function Dashboard() {
 
       <div className="grid grid-4" style={{ marginBottom: 24 }}>
         {[
-          { label: 'Total Leads', value: totalLeads, icon: Users2, color: 'var(--accent)' },
-          { label: 'Added (30 days)', value: stats?.last30Days || 0, icon: TrendingUp, color: 'var(--green)' },
-          { label: 'Hot Leads', value: hotLeads, icon: AlertCircle, color: 'var(--red)' },
-          { label: 'Closed Deals', value: closedLeads, icon: CheckSquare, color: 'var(--purple)' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div className="stat-card" key={label}>
+          { label: 'Total Leads', value: totalLeads, icon: Users2, color: 'var(--accent)', onClick: () => navigate('/leads') },
+          { label: 'Added (30 days)', value: stats?.last30Days || 0, icon: TrendingUp, color: 'var(--green)', onClick: () => navigate('/leads') },
+          { label: "Today's Tasks", value: tasksToday, icon: Clock, color: 'var(--yellow)', onClick: () => navigate('/tasks') },
+          { label: 'Overdue Tasks', value: overdueTasks, icon: AlertCircle, color: 'var(--red)', onClick: () => navigate('/tasks') },
+        ].map(({ label, value, icon: Icon, color, onClick }) => (
+          <div className="stat-card" key={label} onClick={onClick}
+            style={{ cursor: 'pointer', transition: 'box-shadow 0.15s, transform 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
               <div style={{ width: 36, height: 36, borderRadius: 8, background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon size={18} color={color} />
@@ -73,8 +79,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-2" style={{ marginBottom: 24 }}>
-        {/* Pipeline by status */}
+      <div style={{ marginBottom: 24 }}>
         <div className="card">
           <div className="section-title">Pipeline by Status</div>
           {STATUS_ORDER.map(status => {
@@ -82,8 +87,9 @@ export default function Dashboard() {
             const count = parseInt(item?.count || 0);
             const pct = totalLeads ? Math.round((count / totalLeads) * 100) : 0;
             return (
-              <div key={status} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <span className={`status-badge ${getStatusClass(status)}`} style={{ width: 130, justifyContent: 'center' }}>{status}</span>
+              <div key={status} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, cursor: 'pointer' }}
+                onClick={() => navigate('/leads')}>
+                <span className={`status-badge ${getStatusClass(status)}`} style={{ width: 150, justifyContent: 'center' }}>{status}</span>
                 <div style={{ flex: 1, height: 6, background: 'var(--bg4)', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 3, transition: 'width 0.4s' }} />
                 </div>
@@ -91,21 +97,6 @@ export default function Dashboard() {
               </div>
             );
           })}
-        </div>
-
-        {/* Pipeline by source */}
-        <div className="card">
-          <div className="section-title">Pipeline by Source</div>
-          {stats?.bySource?.length === 0 && <div className="empty-state"><p>No leads yet</p></div>}
-          {stats?.bySource?.map(({ source, count }) => (
-            <div key={source || 'Unknown'} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <span className="source-badge" style={{ width: 130, textAlign: 'center' }}>{source || 'Unknown'}</span>
-              <div style={{ flex: 1, height: 6, background: 'var(--bg4)', borderRadius: 3, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${totalLeads ? Math.round((count/totalLeads)*100) : 0}%`, background: 'var(--green)', borderRadius: 3 }} />
-              </div>
-              <span style={{ width: 28, textAlign: 'right', fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>{count}</span>
-            </div>
-          ))}
         </div>
       </div>
 

@@ -8,11 +8,12 @@ import LeadModal from '../components/LeadModal';
 const STATUSES = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
 const PRIORITIES = ['Low','Medium','High'];
 const FU_OPTIONS = [
-  { label: 'Today', days: 0 },{ label: 'Tomorrow', days: 1 },{ label: '2 Days', days: 2 },
-  { label: '3 Days', days: 3 },{ label: '4 Days', days: 4 },{ label: '5 Days', days: 5 },
-  { label: '1 Week', days: 7 },{ label: '2 Weeks', days: 14 },{ label: '3 Weeks', days: 21 },
-  { label: '1 Month', days: 30 },{ label: '2 Months', days: 60 },{ label: '3 Months', days: 90 },
-  { label: '6 Months', days: 180 },
+  { label: 'Today', days: 0 },{ label: '1 Week', days: 7 },
+  { label: 'Tomorrow', days: 1 },{ label: '2 Weeks', days: 14 },
+  { label: '2 Days', days: 2 },{ label: '3 Weeks', days: 21 },
+  { label: '3 Days', days: 3 },{ label: '1 Month', days: 30 },
+  { label: '4 Days', days: 4 },{ label: '2 Months', days: 60 },
+  { label: '5 Days', days: 5 },{ label: '3 Months', days: 90 },
 ];
 
 const getStatusClass = (s) => {
@@ -131,8 +132,9 @@ export default function LeadDetail() {
             <span className={`status-badge ${getStatusClass(lead.status)}`}>{lead.status}</span>
           </div>
           {lead.property_address && (
-            <div style={{ display:'flex', alignItems:'center', gap:5, color:'var(--text3)', fontSize:13, marginTop:3 }}>
-              <MapPin size={12} />{lead.property_address}{lead.property_city ? ', '+lead.property_city : ''}{lead.property_state ? ', '+lead.property_state : ''} {lead.property_zip || ''}
+            <div style={{ display:'flex', alignItems:'center', gap:6, color:'var(--text2)', fontSize:15, fontWeight:600, marginTop:4 }}>
+              <MapPin size={14} style={{ color:'var(--accent)', flexShrink:0 }} />
+              {lead.property_address}{lead.property_city ? ', '+lead.property_city : ''}{lead.property_state ? ', '+lead.property_state : ''} {lead.property_zip || ''}
             </div>
           )}
         </div>
@@ -150,18 +152,18 @@ export default function LeadDetail() {
           {/* Quick Follow-Up */}
           <div className="card">
             <div className="section-title">Quick Follow-Up Task</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:12 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:3, marginBottom:12 }}>
               {FU_OPTIONS.map((opt, i) => (
                 <div key={opt.label}
                   onClick={() => setSelectedFU(selectedFU === i ? null : i)}
-                  style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 8px', borderRadius:6, cursor:'pointer',
+                  style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px', borderRadius:6, cursor:'pointer',
                     background: selectedFU === i ? 'var(--accent-dim)' : 'transparent', transition:'background 0.12s' }}>
-                  <div style={{ width:16, height:16, borderRadius:4, border:`2px solid ${selectedFU === i ? 'var(--accent)' : 'var(--border2)'}`,
+                  <div style={{ width:15, height:15, borderRadius:3, border:`2px solid ${selectedFU === i ? 'var(--accent)' : 'var(--border2)'}`,
                     background: selectedFU === i ? 'var(--accent)' : 'transparent',
                     display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'all 0.12s' }}>
-                    {selectedFU === i && <svg viewBox="0 0 12 12" width="9" height="9" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>}
+                    {selectedFU === i && <svg viewBox="0 0 12 12" width="8" height="8" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>}
                   </div>
-                  <span style={{ fontSize:13, color: selectedFU === i ? 'var(--accent2)' : 'var(--text2)', fontWeight: selectedFU === i ? 600 : 400 }}>{opt.label}</span>
+                  <span style={{ fontSize:12, color: selectedFU === i ? 'var(--accent2)' : 'var(--text2)', fontWeight: selectedFU === i ? 600 : 400 }}>{opt.label}</span>
                 </div>
               ))}
             </div>
