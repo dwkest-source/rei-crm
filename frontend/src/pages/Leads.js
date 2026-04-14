@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import LeadModal from '../components/LeadModal';
 
 const STATUSES = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
@@ -21,20 +22,24 @@ export default function Leads() {
   const [status, setStatus] = useState('');
   const [source, setSource] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const { user } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [memberFilter, setMemberFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const limit = 50;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.getLeads({ search, status, source, page, limit });
+      const data = await api.getLeads({ search, status, source, page, limit, ...(user?.role === 'admin' && memberFilter ? { assigned_to: memberFilter } : {}) });
       setLeads(data.leads);
       setTotal(data.total);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [search, status, source, page]);
 
-  useEffect(() => { setPage(1); }, [search, status, source]);
+  useEffect(() => { setPage(1); }, [search, status, source, memberFilter]);
+  useEffect(() => { if (user?.role === 'admin') { api.getUsers().then(setUsers).catch(() => {}); } }, [user]);
   useEffect(() => { load(); }, [load]);
 
   const fmt = (n) => n ? `$${Number(n).toLocaleString()}` : '—';
@@ -64,8 +69,14 @@ export default function Leads() {
           <option value="">All Sources</option>
           {SOURCES.map(s => <option key={s}>{s}</option>)}
         </select>
-        {(search || status || source) && (
-          <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setStatus(''); setSource(''); }}>Clear</button>
+        {user?.role === 'admin' && (
+          <select className="select-filter" value={memberFilter} onChange={e => setMemberFilter(e.target.value)}>
+            <option value="">All Members</option>
+            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+        )}
+        {(search || status || source || memberFilter) && (
+          <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setStatus(''); setSource(''); setMemberFilter(''); }}>Clear</button>
         )}
       </div>
 

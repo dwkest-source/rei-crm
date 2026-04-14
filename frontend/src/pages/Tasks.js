@@ -18,16 +18,19 @@ export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
+  const [users, setUsers] = useState([]);
+  const [memberFilter, setMemberFilter] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.getAllTasks();
+      const data = await api.getAllTasks(user?.role === 'admin' && memberFilter ? { assigned_to: memberFilter } : {});
       setTasks(data);
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, memberFilter]);
+  useEffect(() => { if (user?.role === 'admin') { api.getUsers().then(setUsers).catch(() => {}); } }, [user]);
 
   const handleToggle = async (task) => {
     const newStatus = task.status === 'Completed' ? 'Pending' : 'Completed';
@@ -62,6 +65,19 @@ export default function Tasks() {
           <p className="page-subtitle">{pendingCount} open task{pendingCount !== 1 ? 's' : ''}{overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}</p>
         </div>
       </div>
+
+      {/* Member filter for admins */}
+      {user?.role === 'admin' && (
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <select className="select-filter" value={memberFilter} onChange={e => { setMemberFilter(e.target.value); }} style={{ minWidth: 180 }}>
+            <option value="">All Members</option>
+            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+          {memberFilter && <span style={{ fontSize: 12, color: 'var(--text3)' }}>
+            Showing tasks for {users.find(u => u.id === memberFilter)?.name}
+          </span>}
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-4" style={{ marginBottom: 24 }}>

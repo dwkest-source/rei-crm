@@ -15,7 +15,14 @@ router.get('/', auth, async (req, res) => {
 
     if (status) { conditions.push(`l.status = $${i++}`); vals.push(status); }
     if (source) { conditions.push(`l.source = $${i++}`); vals.push(source); }
-    if (assigned_to) { conditions.push(`l.assigned_to = $${i++}`); vals.push(assigned_to); }
+    // Non-admins only see their own leads
+    if (req.user.role !== 'admin') {
+      conditions.push(`l.assigned_to = $${i++}`);
+      vals.push(req.user.id);
+    } else if (assigned_to) {
+      conditions.push(`l.assigned_to = $${i++}`);
+      vals.push(assigned_to);
+    }
     if (search) {
       conditions.push(`(l.owner_first_name ILIKE $${i} OR l.owner_last_name ILIKE $${i} OR l.property_address ILIKE $${i} OR l.owner_phone ILIKE $${i} OR l.owner_phone2 ILIKE $${i} OR l.owner_phone3 ILIKE $${i} OR l.owner_email ILIKE $${i})`);
       vals.push(`%${search}%`);
@@ -112,6 +119,12 @@ router.post('/', auth, async (req, res) => {
     const cols = ['created_by'];
     const vals = [req.user.id];
     let i = 2;
+    // Auto-assign to creator if they're not admin
+    if (req.user.role !== 'admin' && !req.body.assigned_to) {
+      cols.push('assigned_to');
+      vals.push(req.user.id);
+      i++;
+    }
 
     for (const f of fields) {
       if (req.body[f] !== undefined && req.body[f] !== '') {
@@ -316,10 +329,15 @@ router.delete('/:id/properties/:propId', auth, async (req, res) => {
 // Stats
 router.get('/stats/overview', auth, async (req, res) => {
   try {
+    const isAdmin = req.user.role === 'admin';
+    const params = isAdmin ? [] : [req.user.id];
+    const whereClause = isAdmin ? '' : 'WHERE assigned_to = $1';
+    const andClause = isAdmin ? '' : 'AND assigned_to = $1';
+
     const [statusCounts, sourceCounts, recentLeads, tasksDue] = await Promise.all([
-      pool.query('SELECT status, COUNT(*) as count FROM leads GROUP BY status ORDER BY count DESC'),
-      pool.query('SELECT source, COUNT(*) as count FROM leads GROUP BY source ORDER BY count DESC'),
-      pool.query('SELECT COUNT(*) as count FROM leads WHERE created_at >= NOW() - INTERVAL \'30 days\''),
+      pool.query(`SELECT status, COUNT(*) as count FROM leads ${whereClause} GROUP BY status ORDER BY count DESC`, params),
+      pool.query(`SELECT source, COUNT(*) as count FROM leads ${whereClause} GROUP BY source ORDER BY count DESC`, params),
+      pool.query(`SELECT COUNT(*) as count FROM leads WHERE created_at >= NOW() - INTERVAL '30 days' ${andClause}`, params),
       pool.query(`SELECT COUNT(*) as count FROM tasks WHERE status != 'Completed' AND due_date < NOW() + INTERVAL '3 days' AND due_date >= NOW()`),
     ]);
     res.json({
