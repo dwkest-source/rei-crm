@@ -19,6 +19,8 @@ export default function Dashboard() {
   const [dueTasks, setDueTasks] = useState([]);
 
   useEffect(() => {
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
     Promise.all([
       api.getStats(),
       api.getLeads({ limit: 8 }),
@@ -26,7 +28,13 @@ export default function Dashboard() {
     ]).then(([s, l, t]) => {
       setStats(s);
       setRecentLeads(l.leads);
-      setDueTasks(t.slice(0, 5));
+      // Filter for today's tasks (due today or overdue)
+      const todays = t.filter(task => {
+        if (!task.due_date) return false;
+        const due = new Date(task.due_date);
+        return due <= todayEnd;
+      });
+      setDueTasks(todays);
     }).catch(console.error);
   }, []);
 
@@ -124,24 +132,38 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Due tasks */}
+        {/* Today's tasks */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div className="section-title" style={{ margin: 0 }}>Upcoming Tasks</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="section-title" style={{ margin: 0 }}>Today's Tasks</div>
+              {dueTasks.length > 0 && (
+                <span style={{ background: dueTasks.some(t => new Date(t.due_date) < new Date()) ? 'var(--red)' : 'var(--accent)', color: 'white', fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 10 }}>
+                  {dueTasks.length}
+                </span>
+              )}
+            </div>
             <button className="btn btn-ghost btn-sm" onClick={() => navigate('/tasks')}>View all</button>
           </div>
-          {dueTasks.length === 0 && <div className="empty-state"><p>No pending tasks</p></div>}
-          {dueTasks.map(task => (
-            <div key={task.id} onClick={() => navigate(`/leads/${task.lead_id}`)} style={{ padding: '9px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-              <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text)' }}>{task.title}</div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 3 }}>
-                {task.property_address && <span style={{ fontSize: 11.5, color: 'var(--text3)' }}>{task.property_address}</span>}
-                {task.due_date && <span style={{ fontSize: 11.5, color: new Date(task.due_date) < new Date() ? 'var(--red)' : 'var(--text3)' }}>
-                  Due {new Date(task.due_date).toLocaleDateString()}
-                </span>}
+          {dueTasks.length === 0 && <div className="empty-state"><p>No tasks due today 🎉</p></div>}
+          {dueTasks.map(task => {
+            const isOverdue = new Date(task.due_date) < new Date();
+            return (
+              <div key={task.id} onClick={() => navigate(`/leads/${task.lead_id}`)} style={{ padding: '9px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {isOverdue && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--red)', background: 'var(--red-dim)', padding: '1px 6px', borderRadius: 4 }}>OVERDUE</span>}
+                  <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text)' }}>{task.title}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 3 }}>
+                  {task.property_address && <span style={{ fontSize: 11.5, color: 'var(--text3)' }}>{task.property_address}</span>}
+                  {task.owner_first_name && !task.property_address && <span style={{ fontSize: 11.5, color: 'var(--text3)' }}>{task.owner_first_name} {task.owner_last_name}</span>}
+                  {task.due_date && <span style={{ fontSize: 11.5, color: isOverdue ? 'var(--red)' : 'var(--text3)' }}>
+                    Due {new Date(task.due_date).toLocaleDateString()}
+                  </span>}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

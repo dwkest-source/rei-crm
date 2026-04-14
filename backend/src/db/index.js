@@ -92,10 +92,10 @@ const initDB = async () => {
     `);
 
     // Migrations - add new columns if they don't exist
-    await client.query(\`
+    await client.query(`
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS owner_phone2 VARCHAR(50);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS owner_phone3 VARCHAR(50);
-    \`);
+    `);
     console.log('Database initialized successfully');
   } finally {
     client.release();
