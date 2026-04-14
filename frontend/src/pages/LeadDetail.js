@@ -222,18 +222,18 @@ export default function LeadDetail() {
             )}
             <InfoRow label="Type" value={lead.property_type} />
             {propDetails && <>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:4, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
                 {[
                   { label:'Beds', key:'bedrooms', placeholder:'3' },
                   { label:'Baths', key:'bathrooms', placeholder:'2' },
                   { label:'Sqft', key:'sqft', placeholder:'1800' },
                   { label:'Lot Sqft', key:'lot_sqft', placeholder:'6000' },
                 ].map(({ label, key, placeholder }) => (
-                  <div key={key}>
-                    <div style={{ fontSize:10, color:'var(--text3)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:3 }}>{label}</div>
+                  <div key={key} style={{ minWidth:0 }}>
+                    <div style={{ fontSize:9, color:'var(--text3)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:3, whiteSpace:'nowrap' }}>{label}</div>
                     <input
                       className="form-input"
-                      style={{ padding:'4px 8px', fontSize:13 }}
+                      style={{ padding:'3px 6px', fontSize:12, width:'100%', minWidth:0 }}
                       type="number"
                       placeholder={placeholder}
                       value={propDetails[key]}
@@ -244,10 +244,10 @@ export default function LeadDetail() {
                 ))}
               </div>
               <div style={{ padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
-                <div style={{ fontSize:10, color:'var(--text3)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>Property Notes</div>
+                <div style={{ fontSize:9, color:'var(--text3)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>Property Notes</div>
                 <textarea
                   className="form-input"
-                  style={{ fontSize:12, minHeight:64, resize:'vertical' }}
+                  style={{ fontSize:12, minHeight:110, resize:'vertical', width:'100%', boxSizing:'border-box' }}
                   placeholder="Condition, access notes, anything relevant..."
                   value={propDetails.property_notes}
                   onChange={e => setPropDetails(p => ({ ...p, property_notes: e.target.value }))}
