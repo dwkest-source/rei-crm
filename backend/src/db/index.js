@@ -35,6 +35,8 @@ const initDB = async () => {
         owner_last_name VARCHAR(255),
         owner_email VARCHAR(255),
         owner_phone VARCHAR(50),
+        owner_phone2 VARCHAR(50),
+        owner_phone3 VARCHAR(50),
         owner_mailing_address TEXT,
         owner_mailing_city VARCHAR(255),
         owner_mailing_state VARCHAR(10),
@@ -88,6 +90,12 @@ const initDB = async () => {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
+
+    // Migrations - add new columns if they don't exist
+    await client.query(\`
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS owner_phone2 VARCHAR(50);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS owner_phone3 VARCHAR(50);
+    \`);
     console.log('Database initialized successfully');
   } finally {
     client.release();

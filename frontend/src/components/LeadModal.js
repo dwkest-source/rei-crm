@@ -13,7 +13,7 @@ export default function LeadModal({ lead, onClose, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    owner_first_name: '', owner_last_name: '', owner_email: '', owner_phone: '',
+    owner_first_name: '', owner_last_name: '', owner_email: '', owner_phone: '', owner_phone2: '', owner_phone3: '',
     owner_mailing_address: '', owner_mailing_city: '', owner_mailing_state: '', owner_mailing_zip: '',
     property_address: '', property_city: '', property_state: '', property_zip: '', property_type: '',
     source: '', status: 'New Lead', motivation: '',
@@ -93,7 +93,9 @@ export default function LeadModal({ lead, onClose, onSaved }) {
               <div className="grid grid-2" style={{ gap: 12 }}>
                 {inp('owner_first_name', 'First Name', { placeholder: 'John', autoFocus: true })}
                 {inp('owner_last_name', 'Last Name', { placeholder: 'Smith' })}
-                {inp('owner_phone', 'Phone', { type: 'tel', placeholder: '(555) 000-0000' })}
+                {inp('owner_phone', 'Phone 1', { type: 'tel', placeholder: '(555) 000-0000' })}
+                {inp('owner_phone2', 'Phone 2', { type: 'tel', placeholder: '(555) 000-0000' })}
+                {inp('owner_phone3', 'Phone 3', { type: 'tel', placeholder: '(555) 000-0000' })}
                 {inp('owner_email', 'Email', { type: 'email', placeholder: 'owner@email.com' })}
                 <div style={{ gridColumn: 'span 2' }}>{inp('owner_mailing_address', 'Mailing Address', { placeholder: '123 Main St' })}</div>
                 {inp('owner_mailing_city', 'City', { placeholder: 'Phoenix' })}

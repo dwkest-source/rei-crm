@@ -340,15 +340,59 @@ export default function LeadDetail() {
 
         {/* Right sidebar */}
         <div className="detail-sidebar">
+          {/* Quick Follow-Up */}
+          <div className="card">
+            <div className="section-title">Quick Follow-Up Task</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {[
+                { label: 'Today', days: 0 },
+                { label: 'Tomorrow', days: 1 },
+                { label: '2 Days', days: 2 },
+                { label: '3 Days', days: 3 },
+                { label: '4 Days', days: 4 },
+                { label: '5 Days', days: 5 },
+                { label: '1 Week', days: 7 },
+                { label: '2 Weeks', days: 14 },
+                { label: '3 Weeks', days: 21 },
+                { label: '1 Month', days: 30 },
+                { label: '2 Months', days: 60 },
+                { label: '3 Months', days: 90 },
+                { label: '6 Months', days: 180 },
+              ].map(({ label, days }) => {
+                const due = new Date();
+                due.setDate(due.getDate() + days);
+                due.setHours(9, 0, 0, 0);
+                return (
+                  <button
+                    key={label}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: 11, padding: '4px 10px' }}
+                    onClick={async () => {
+                      const task = await api.addTask(id, {
+                        title: 'Follow-Up',
+                        due_date: due.toISOString(),
+                        priority: 'Medium',
+                      });
+                      setLead(l => ({ ...l, tasks: [...l.tasks, task] }));
+                      setTab('tasks');
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Contact info */}
           <div className="card">
             <div className="section-title">Contact Info</div>
-            {lead.owner_phone && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            {[lead.owner_phone, lead.owner_phone2, lead.owner_phone3].filter(Boolean).map((ph, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <Phone size={13} style={{ color: 'var(--text3)', flexShrink: 0 }} />
-                <a href={`tel:${lead.owner_phone}`} style={{ color: 'var(--accent2)', fontSize: 14 }}>{lead.owner_phone}</a>
+                <a href={`tel:${ph}`} style={{ color: 'var(--accent2)', fontSize: 14 }}>{ph}</a>
               </div>
-            )}
+            ))}
             {lead.owner_email && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <Mail size={13} style={{ color: 'var(--text3)', flexShrink: 0 }} />
@@ -364,7 +408,7 @@ export default function LeadDetail() {
                 </div>
               </div>
             )}
-            {!lead.owner_phone && !lead.owner_email && !lead.owner_mailing_address && (
+            {!lead.owner_phone && !lead.owner_phone2 && !lead.owner_phone3 && !lead.owner_email && !lead.owner_mailing_address && (
               <div style={{ color: 'var(--text3)', fontSize: 13 }}>No contact info yet</div>
             )}
           </div>
