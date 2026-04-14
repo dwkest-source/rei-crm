@@ -209,6 +209,17 @@ export default function LeadDetail() {
                 value={[lead.bedrooms ? lead.bedrooms+'bd' : null, lead.bathrooms ? lead.bathrooms+'ba' : null, lead.sqft ? Number(lead.sqft).toLocaleString()+' sqft' : null].filter(Boolean).join(' · ')} />
             )}
 
+            {lead.properties?.length > 0 && <>
+              {lead.properties.map((p, i) => (
+                <div key={p.id} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid var(--border)', gap:12 }}>
+                  <span style={{ fontSize:12, color:'var(--text3)', flexShrink:0 }}>Property {i + 2}</span>
+                  <span style={{ fontSize:13, color:'var(--text2)', fontWeight:500, textAlign:'right', lineHeight:1.5 }}>
+                    {p.address}{p.city ? <><br/>{[p.city, p.state].filter(Boolean).join(', ')} {p.zip}</> : ''}
+                  </span>
+                </div>
+              ))}
+            </>}
+
             {hasNumbers && <>
               <SectionHeading>Deal Numbers</SectionHeading>
               <InfoRow label="Asking Price" value={fmt$(lead.asking_price)} />

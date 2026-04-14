@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api';
-import { X } from 'lucide-react';
+import { X, Plus, Trash2 } from 'lucide-react';
 
 const STATUSES = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
 const SOURCES = ['Direct Mail','Cold Call','Cold Text','LaunchControl','Driving for Dollars','Referral','Website','MLS','Wholesaler','Other'];
@@ -10,6 +10,12 @@ const STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL'
 export default function LeadModal({ lead, onClose, onSaved }) {
   const [users, setUsers] = useState([]);
   const [tab, setTab] = useState('owner');
+  const [extraProps, setExtraProps] = useState(
+    lead?.id ? [] : []
+  );
+  const addExtraProp = () => setExtraProps(p => [...p, { address:'', city:'', state:'', zip:'' }]);
+  const removeExtraProp = (i) => setExtraProps(p => p.filter((_, idx) => idx !== i));
+  const updateExtraProp = (i, field, val) => setExtraProps(p => p.map((item, idx) => idx === i ? {...item, [field]: val} : item));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
@@ -49,10 +55,18 @@ export default function LeadModal({ lead, onClose, onSaved }) {
     setError('');
     setLoading(true);
     try {
+      let savedLead;
       if (lead?.id) {
-        await api.updateLead(lead.id, form);
+        savedLead = await api.updateLead(lead.id, form);
+        savedLead = { id: lead.id };
       } else {
-        await api.createLead(form);
+        savedLead = await api.createLead(form);
+      }
+      // Save extra properties
+      for (const ep of extraProps) {
+        if (ep.address.trim()) {
+          await api.addProperty(savedLead.id, ep);
+        }
       }
       onSaved();
     } catch (err) {
@@ -109,7 +123,9 @@ export default function LeadModal({ lead, onClose, onSaved }) {
 
             {tab === 'property' && (
               <div className="grid grid-2" style={{ gap: 12 }}>
-                <div style={{ gridColumn: 'span 2' }}>{inp('property_address', 'Property Address', { placeholder: '456 Oak Ave' })}</div>
+                {/* Primary property */}
+                <div style={{ gridColumn: 'span 2', fontWeight: 600, fontSize: 12, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', paddingBottom: 4, borderBottom: '1px solid var(--border)' }}>Primary Property</div>
+                <div style={{ gridColumn: 'span 2' }}>{inp('property_address', 'Address', { placeholder: '456 Oak Ave' })}</div>
                 {inp('property_city', 'City', { placeholder: 'Scottsdale' })}
                 <div className="grid grid-2" style={{ gap: 12 }}>
                   {sel('property_state', 'State', STATES)}
@@ -119,6 +135,45 @@ export default function LeadModal({ lead, onClose, onSaved }) {
                 {inp('bedrooms', 'Beds', { type: 'number', placeholder: '3' })}
                 {inp('bathrooms', 'Baths', { type: 'number', placeholder: '2' })}
                 <div style={{ gridColumn: 'span 2' }}>{inp('sqft', 'Square Footage', { type: 'number', placeholder: '1800' })}</div>
+
+                {/* Additional properties */}
+                {extraProps.map((ep, i) => (
+                  <div key={i} style={{ gridColumn: 'span 2', background: 'var(--bg3)', borderRadius: 8, padding: 12, border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <span style={{ fontWeight: 600, fontSize: 12, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Additional Property {i + 1}</span>
+                      <button type="button" className="btn-icon" onClick={() => removeExtraProp(i)}><Trash2 style={{ width: 13, height: 13 }} /></button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      <div style={{ gridColumn: 'span 2' }} className="form-group">
+                        <label className="form-label">Address</label>
+                        <input className="form-input" value={ep.address} onChange={e => updateExtraProp(i, 'address', e.target.value)} placeholder="123 Main St" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">City</label>
+                        <input className="form-input" value={ep.city} onChange={e => updateExtraProp(i, 'city', e.target.value)} placeholder="City" />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <div className="form-group">
+                          <label className="form-label">State</label>
+                          <select className="form-input" value={ep.state} onChange={e => updateExtraProp(i, 'state', e.target.value)}>
+                            <option value="">—</option>
+                            {STATES.map(s => <option key={s}>{s}</option>)}
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">ZIP</label>
+                          <input className="form-input" value={ep.zip} onChange={e => updateExtraProp(i, 'zip', e.target.value)} placeholder="85251" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div style={{ gridColumn: 'span 2' }}>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={addExtraProp}>
+                    <Plus size={13} /> Add Another Property
+                  </button>
+                </div>
               </div>
             )}
 

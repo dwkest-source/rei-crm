@@ -29,6 +29,9 @@ const initDB = async () => {
         property_state VARCHAR(10),
         property_zip VARCHAR(20),
         property_type VARCHAR(100),
+        bedrooms NUMERIC(4,1),
+        bathrooms NUMERIC(4,1),
+        sqft INTEGER,
         
         -- Owner Info
         owner_first_name VARCHAR(255),
@@ -57,6 +60,21 @@ const initDB = async () => {
         
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS properties (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+        address TEXT,
+        city VARCHAR(255),
+        state VARCHAR(10),
+        zip VARCHAR(20),
+        property_type VARCHAR(100),
+        bedrooms NUMERIC(4,1),
+        bathrooms NUMERIC(4,1),
+        sqft INTEGER,
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS notes (
@@ -95,6 +113,9 @@ const initDB = async () => {
     await client.query(`
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS owner_phone2 VARCHAR(50);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS owner_phone3 VARCHAR(50);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS bedrooms NUMERIC(4,1);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS bathrooms NUMERIC(4,1);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS sqft INTEGER;
     `);
     console.log('Database initialized successfully');
   } finally {

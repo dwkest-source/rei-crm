@@ -17,7 +17,7 @@ router.get('/', auth, async (req, res) => {
     if (source) { conditions.push(`l.source = $${i++}`); vals.push(source); }
     if (assigned_to) { conditions.push(`l.assigned_to = $${i++}`); vals.push(assigned_to); }
     if (search) {
-      conditions.push(`(l.owner_first_name ILIKE $${i} OR l.owner_last_name ILIKE $${i} OR l.property_address ILIKE $${i} OR l.owner_phone ILIKE $${i} OR l.owner_email ILIKE $${i})`);
+      conditions.push(`(l.owner_first_name ILIKE $${i} OR l.owner_last_name ILIKE $${i} OR l.property_address ILIKE $${i} OR l.owner_phone ILIKE $${i} OR l.owner_phone2 ILIKE $${i} OR l.owner_phone3 ILIKE $${i} OR l.owner_email ILIKE $${i})`);
       vals.push(`%${search}%`);
       i++;
     }
@@ -56,7 +56,7 @@ router.get('/', auth, async (req, res) => {
 // Get single lead
 router.get('/:id', auth, async (req, res) => {
   try {
-    const [leadResult, notesResult, tasksResult, activityResult] = await Promise.all([
+    const [leadResult, notesResult, tasksResult, activityResult, propertiesResult] = await Promise.all([
       pool.query(`
         SELECT l.*, 
           u1.name as assigned_to_name,
@@ -81,6 +81,7 @@ router.get('/:id', auth, async (req, res) => {
         LEFT JOIN users u ON a.user_id = u.id 
         WHERE a.lead_id = $1 ORDER BY a.created_at DESC LIMIT 50
       `, [req.params.id]),
+      pool.query('SELECT * FROM properties WHERE lead_id = $1 ORDER BY sort_order, created_at', [req.params.id]),
     ]);
 
     if (!leadResult.rows[0]) return res.status(404).json({ error: 'Lead not found' });
@@ -90,6 +91,7 @@ router.get('/:id', auth, async (req, res) => {
       notes: notesResult.rows,
       tasks: tasksResult.rows,
       activities: activityResult.rows,
+      properties: propertiesResult.rows,
     });
   } catch (err) {
     console.error(err);
@@ -101,10 +103,10 @@ router.get('/:id', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   const fields = [
     'property_address','property_city','property_state','property_zip','property_type',
-    'owner_first_name','owner_last_name','owner_email','owner_phone',
+    'owner_first_name','owner_last_name','owner_email','owner_phone','owner_phone2','owner_phone3',
     'owner_mailing_address','owner_mailing_city','owner_mailing_state','owner_mailing_zip',
     'source','status','motivation','asking_price','estimated_arv','estimated_repair','offer_price',
-    'campaign','list_name','assigned_to'
+    'campaign','list_name','assigned_to','bedrooms','bathrooms','sqft'
   ];
   try {
     const cols = ['created_by'];
@@ -140,10 +142,10 @@ router.post('/', auth, async (req, res) => {
 router.patch('/:id', auth, async (req, res) => {
   const fields = [
     'property_address','property_city','property_state','property_zip','property_type',
-    'owner_first_name','owner_last_name','owner_email','owner_phone',
+    'owner_first_name','owner_last_name','owner_email','owner_phone','owner_phone2','owner_phone3',
     'owner_mailing_address','owner_mailing_city','owner_mailing_state','owner_mailing_zip',
     'source','status','motivation','asking_price','estimated_arv','estimated_repair','offer_price',
-    'campaign','list_name','assigned_to'
+    'campaign','list_name','assigned_to','bedrooms','bathrooms','sqft'
   ];
   try {
     const updates = [];
@@ -270,6 +272,45 @@ router.delete('/:id/tasks/:taskId', auth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+
+// --- Properties ---
+router.get('/:id/properties', auth, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM properties WHERE lead_id = $1 ORDER BY sort_order, created_at', [req.params.id]);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.post('/:id/properties', auth, async (req, res) => {
+  const { address, city, state, zip, property_type, bedrooms, bathrooms, sqft } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO properties (lead_id, address, city, state, zip, property_type, bedrooms, bathrooms, sqft) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
+      [req.params.id, address, city, state, zip, property_type, bedrooms||null, bathrooms||null, sqft||null]
+    );
+    await pool.query('UPDATE leads SET updated_at = NOW() WHERE id = $1', [req.params.id]);
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.patch('/:id/properties/:propId', auth, async (req, res) => {
+  const { address, city, state, zip, property_type, bedrooms, bathrooms, sqft } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE properties SET address=$1, city=$2, state=$3, zip=$4, property_type=$5, bedrooms=$6, bathrooms=$7, sqft=$8 WHERE id=$9 RETURNING *`,
+      [address, city, state, zip, property_type, bedrooms||null, bathrooms||null, sqft||null, req.params.propId]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.delete('/:id/properties/:propId', auth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM properties WHERE id = $1', [req.params.propId]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
 // Stats

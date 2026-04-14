@@ -40,6 +40,12 @@ export const api = {
   deleteLead: (id) => request(`/leads/${id}`, { method: 'DELETE' }),
   getStats: () => request('/leads/stats/overview'),
 
+  // Properties
+  getProperties: (leadId) => request(`/leads/${leadId}/properties`),
+  addProperty: (leadId, body) => request(`/leads/${leadId}/properties`, { method: 'POST', body: JSON.stringify(body) }),
+  updateProperty: (leadId, propId, body) => request(`/leads/${leadId}/properties/${propId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteProperty: (leadId, propId) => request(`/leads/${leadId}/properties/${propId}`, { method: 'DELETE' }),
+
   // Notes
   addNote: (leadId, body) => request(`/leads/${leadId}/notes`, { method: 'POST', body: JSON.stringify(body) }),
   deleteNote: (leadId, noteId) => request(`/leads/${leadId}/notes/${noteId}`, { method: 'DELETE' }),
