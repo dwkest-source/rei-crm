@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { X, Plus, Trash2 } from 'lucide-react';
+import AddressAutocomplete from './AddressAutocomplete';
 
 const STATUSES = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
 const SOURCES = ['Direct Mail','Cold Call','Cold Text','LaunchControl','Driving for Dollars','Referral','Website','MLS','Wholesaler','Other'];
@@ -112,7 +113,22 @@ export default function LeadModal({ lead, onClose, onSaved }) {
                 {inp('owner_phone2', 'Phone 2', { type: 'tel', placeholder: '(555) 000-0000' })}
                 {inp('owner_phone3', 'Phone 3', { type: 'tel', placeholder: '(555) 000-0000' })}
                 {inp('owner_email', 'Email', { type: 'email', placeholder: 'owner@email.com' })}
-                <div style={{ gridColumn: 'span 2' }}>{inp('owner_mailing_address', 'Mailing Address', { placeholder: '123 Main St' })}</div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <div className="form-group">
+                    <label className="form-label">Mailing Address</label>
+                    <AddressAutocomplete
+                      value={form.owner_mailing_address || ''}
+                      onChange={v => set('owner_mailing_address', v)}
+                      onSelect={({ street, city, state, zip }) => {
+                        set('owner_mailing_address', street);
+                        set('owner_mailing_city', city);
+                        set('owner_mailing_state', state);
+                        set('owner_mailing_zip', zip);
+                      }}
+                      placeholder="123 Main St"
+                    />
+                  </div>
+                </div>
                 {inp('owner_mailing_city', 'City', { placeholder: 'Phoenix' })}
                 <div className="grid grid-2" style={{ gap: 12 }}>
                   {sel('owner_mailing_state', 'State', STATES)}
@@ -125,7 +141,22 @@ export default function LeadModal({ lead, onClose, onSaved }) {
               <div className="grid grid-2" style={{ gap: 12 }}>
                 {/* Primary property */}
                 <div style={{ gridColumn: 'span 2', fontWeight: 600, fontSize: 12, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', paddingBottom: 4, borderBottom: '1px solid var(--border)' }}>Primary Property</div>
-                <div style={{ gridColumn: 'span 2' }}>{inp('property_address', 'Address', { placeholder: '456 Oak Ave' })}</div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <div className="form-group">
+                    <label className="form-label">Address</label>
+                    <AddressAutocomplete
+                      value={form.property_address || ''}
+                      onChange={v => set('property_address', v)}
+                      onSelect={({ street, city, state, zip }) => {
+                        set('property_address', street);
+                        set('property_city', city);
+                        set('property_state', state);
+                        set('property_zip', zip);
+                      }}
+                      placeholder="456 Oak Ave"
+                    />
+                  </div>
+                </div>
                 {inp('property_city', 'City', { placeholder: 'Scottsdale' })}
                 <div className="grid grid-2" style={{ gap: 12 }}>
                   {sel('property_state', 'State', STATES)}
@@ -146,7 +177,17 @@ export default function LeadModal({ lead, onClose, onSaved }) {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                       <div style={{ gridColumn: 'span 2' }} className="form-group">
                         <label className="form-label">Address</label>
-                        <input className="form-input" value={ep.address} onChange={e => updateExtraProp(i, 'address', e.target.value)} placeholder="123 Main St" />
+                        <AddressAutocomplete
+                          value={ep.address}
+                          onChange={v => updateExtraProp(i, 'address', v)}
+                          onSelect={({ street, city, state, zip }) => {
+                            updateExtraProp(i, 'address', street);
+                            updateExtraProp(i, 'city', city);
+                            updateExtraProp(i, 'state', state);
+                            updateExtraProp(i, 'zip', zip);
+                          }}
+                          placeholder="123 Main St"
+                        />
                       </div>
                       <div className="form-group">
                         <label className="form-label">City</label>
