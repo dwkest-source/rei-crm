@@ -142,7 +142,7 @@ export default function LeadDetail() {
   return (
     <div className="page">
       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
-        <button className="btn-icon" onClick={() => navigate('/leads')}><ArrowLeft /></button>
+        <button className="btn-icon" onClick={() => navigate(-1)}><ArrowLeft /></button>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
             <h1 style={{ fontFamily:'var(--font-display)', fontSize:22, fontWeight:700 }}>{ownerName}</h1>

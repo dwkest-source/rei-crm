@@ -37,7 +37,8 @@ router.get('/', auth, async (req, res) => {
           u1.name as assigned_to_name,
           u2.name as created_by_name,
           (SELECT COUNT(*) FROM notes WHERE lead_id = l.id) as note_count,
-          (SELECT COUNT(*) FROM tasks WHERE lead_id = l.id AND status != 'Completed') as open_tasks
+          (SELECT COUNT(*) FROM tasks WHERE lead_id = l.id AND status != 'Completed') as open_tasks,
+          (SELECT MIN(due_date) FROM tasks WHERE lead_id = l.id AND status != 'Completed' AND due_date IS NOT NULL) as next_task_date
         FROM leads l
         LEFT JOIN users u1 ON l.assigned_to = u1.id
         LEFT JOIN users u2 ON l.created_by = u2.id

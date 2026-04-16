@@ -52,7 +52,10 @@ export default function Tasks() {
 
   const grouped = {};
   filtered.forEach(task => {
-    const key = task.property_address || `${task.owner_first_name || ''} ${task.owner_last_name || ''}`.trim() || 'Unlinked';
+    const ownerName = `${task.owner_first_name || ''} ${task.owner_last_name || ''}`.trim();
+    const key = ownerName && task.property_address
+      ? `${ownerName} — ${task.property_address}`
+      : task.property_address || ownerName || 'Unlinked';
     if (!grouped[key]) grouped[key] = { leadId: task.lead_id, tasks: [] };
     grouped[key].tasks.push(task);
   });

@@ -26,6 +26,8 @@ export default function Leads() {
   const [users, setUsers] = useState([]);
   const [memberFilter, setMemberFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sortField, setSortField] = useState('updated_at');
+  const [sortDir, setSortDir] = useState('desc');
   const limit = 50;
 
   const load = useCallback(async () => {
@@ -43,6 +45,40 @@ export default function Leads() {
   useEffect(() => { load(); }, [load]);
 
   const fmt = (n) => n ? `$${Number(n).toLocaleString()}` : '—';
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir(field === 'next_task_date' ? 'asc' : 'desc');
+    }
+  };
+
+  const sortedLeads = [...leads].sort((a, b) => {
+    if (sortField === 'next_task_date') {
+      const aVal = a.next_task_date ? new Date(a.next_task_date) : new Date('9999-01-01');
+      const bVal = b.next_task_date ? new Date(b.next_task_date) : new Date('9999-01-01');
+      return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+    if (sortField === 'updated_at') {
+      return sortDir === 'asc'
+        ? new Date(a.updated_at) - new Date(b.updated_at)
+        : new Date(b.updated_at) - new Date(a.updated_at);
+    }
+    if (sortField === 'owner') {
+      const aName = `${a.owner_last_name || ''} ${a.owner_first_name || ''}`.toLowerCase();
+      const bName = `${b.owner_last_name || ''} ${b.owner_first_name || ''}`.toLowerCase();
+      return sortDir === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
+    }
+    return 0;
+  });
+
+  const SortHeader = ({ field, children }) => (
+    <th onClick={() => handleSort(field)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}>
+      {children} {sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↕</span>}
+    </th>
+  );
 
   return (
     <div className="page">
@@ -85,19 +121,20 @@ export default function Leads() {
           <table>
             <thead>
               <tr>
-                <th>Owner</th>
+                <SortHeader field="owner">Owner</SortHeader>
                 <th>Property Address</th>
                 <th>Phone</th>
                 <th>Source</th>
                 <th>Status</th>
                 <th>Open Tasks</th>
-                <th>Updated</th>
+                <SortHeader field="next_task_date">Next Task</SortHeader>
+                <SortHeader field="updated_at">Updated</SortHeader>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={7} className="table-empty">Loading...</td></tr>}
-              {!loading && leads.length === 0 && <tr><td colSpan={7} className="table-empty">No leads found. Add your first lead!</td></tr>}
-              {leads.map(lead => (
+              {loading && <tr><td colSpan={8} className="table-empty">Loading...</td></tr>}
+              {!loading && leads.length === 0 && <tr><td colSpan={8} className="table-empty">No leads found. Add your first lead!</td></tr>}
+              {sortedLeads.map(lead => (
                 <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)}>
                   <td style={{ fontWeight: 600 }}>{lead.owner_first_name || ''} {lead.owner_last_name || ''}</td>
                   <td>{lead.property_address ? `${lead.property_address}${lead.property_city ? ', ' + lead.property_city : ''}` : '—'}</td>
@@ -105,6 +142,9 @@ export default function Leads() {
                   <td><span className="source-badge">{lead.source || '—'}</span></td>
                   <td><span className={`status-badge ${getStatusClass(lead.status)}`}>{lead.status}</span></td>
                   <td>{lead.open_tasks || 0}</td>
+                  <td style={{ fontSize: 12, color: lead.next_task_date && new Date(lead.next_task_date) < new Date() ? 'var(--red)' : 'var(--text3)', fontWeight: lead.next_task_date && new Date(lead.next_task_date) < new Date() ? 600 : 400 }}>
+                    {lead.next_task_date ? new Date(lead.next_task_date).toLocaleDateString() : '—'}
+                  </td>
                   <td style={{ color: 'var(--text3)', fontSize: 12 }}>{new Date(lead.updated_at).toLocaleDateString()}</td>
                 </tr>
               ))}
