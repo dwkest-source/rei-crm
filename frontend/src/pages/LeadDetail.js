@@ -202,6 +202,19 @@ export default function LeadDetail() {
         {/* LEFT SIDEBAR */}
         <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
 
+          {/* Lead Owner */}
+          {lead.assigned_to_name && (
+            <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <span style={{ fontSize:11, fontWeight:700, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Lead Owner</span>
+              <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                <div style={{ width:22, height:22, borderRadius:'50%', background:'var(--accent)', color:'white', fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  {lead.assigned_to_name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}
+                </div>
+                <span style={{ fontSize:13, fontWeight:600, color:'var(--text2)' }}>{lead.assigned_to_name}</span>
+              </div>
+            </div>
+          )}
+
           {/* Quick Follow-Up */}
           <div className="card">
             <div className="section-title">Quick Follow-Up Task</div>
