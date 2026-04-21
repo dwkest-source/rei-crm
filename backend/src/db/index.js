@@ -103,6 +103,17 @@ const initDB = async () => {
         updated_at TIMESTAMP DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS notifications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        from_user_id UUID REFERENCES users(id),
+        lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+        note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+        message TEXT NOT NULL,
+        read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS activities (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
@@ -122,6 +133,16 @@ const initDB = async () => {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS sqft INTEGER;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS lot_sqft INTEGER;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS property_notes TEXT;
+      CREATE TABLE IF NOT EXISTS notifications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        from_user_id UUID REFERENCES users(id),
+        lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+        note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+        message TEXT NOT NULL,
+        read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
     `);
     console.log('Database initialized successfully');
   } finally {

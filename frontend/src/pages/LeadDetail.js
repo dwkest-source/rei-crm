@@ -54,6 +54,11 @@ export default function LeadDetail() {
   const [creatingFU, setCreatingFU] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [addingNote, setAddingNote] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState('');
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionPos, setMentionPos] = useState(0);
+  const [mentions, setMentions] = useState([]);
+  const noteRef = React.useRef(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskForm, setTaskForm] = useState({ title:'', description:'', due_date:'', priority:'Medium', assigned_to:'' });
   const [users, setUsers] = useState([]);
@@ -86,9 +91,40 @@ export default function LeadDetail() {
       setLead(l => ({ ...l, ...propDetails }));
     } finally { setSavingProp(false); }
   };
+  const handleNoteChange = (e) => {
+    const val = e.target.value;
+    setNoteText(val);
+    const cursor = e.target.selectionStart;
+    const textUpToCursor = val.slice(0, cursor);
+    const atMatch = textUpToCursor.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionSearch(atMatch[1].toLowerCase());
+      setShowMentions(true);
+      setMentionPos(cursor - atMatch[0].length);
+    } else {
+      setShowMentions(false);
+    }
+  };
+
+  const handleSelectMention = (u) => {
+    const before = noteText.slice(0, mentionPos);
+    const after = noteText.slice(noteRef.current?.selectionStart || noteText.length);
+    const atIndex = before.lastIndexOf('@');
+    const newText = before.slice(0, atIndex) + `@${u.name} ` + after;
+    setNoteText(newText);
+    setShowMentions(false);
+    setMentions(m => m.includes(u.id) ? m : [...m, u.id]);
+    noteRef.current?.focus();
+  };
+
   const handleAddNote = async (e) => {
     e.preventDefault(); if (!noteText.trim()) return; setAddingNote(true);
-    try { const note = await api.addNote(id, { content: noteText }); setLead(l => ({ ...l, notes: [note, ...l.notes] })); setNoteText(''); }
+    try {
+      const note = await api.addNote(id, { content: noteText, mentions });
+      setLead(l => ({ ...l, notes: [note, ...l.notes] }));
+      setNoteText('');
+      setMentions([]);
+    }
     finally { setAddingNote(false); }
   };
   const handleDeleteNote = async (noteId) => { await api.deleteNote(id, noteId); setLead(l => ({ ...l, notes: l.notes.filter(n => n.id !== noteId) })); };
@@ -337,9 +373,35 @@ export default function LeadDetail() {
             <div style={{ padding:'0 20px 20px' }}>
 
               {tab === 'notes' && <>
-                <form onSubmit={handleAddNote} style={{ display:'flex', gap:8, marginBottom:16 }}>
-                  <textarea className="form-input" style={{ flex:1, minHeight:72, resize:'vertical' }} value={noteText}
-                    onChange={e => setNoteText(e.target.value)} placeholder="Add a note... (call notes, property condition, seller situation)" />
+                <form onSubmit={handleAddNote} style={{ display:'flex', gap:8, marginBottom:16, position:'relative' }}>
+                  <div style={{ flex:1, position:'relative' }}>
+                    <textarea
+                      ref={noteRef}
+                      className="form-input"
+                      style={{ width:'100%', minHeight:72, resize:'vertical' }}
+                      value={noteText}
+                      onChange={handleNoteChange}
+                      placeholder="Add a note... type @ to mention a teammate"
+                    />
+                    {showMentions && (() => {
+                      const filtered = users.filter(u => u.name.toLowerCase().includes(mentionSearch));
+                      return filtered.length > 0 ? (
+                        <div style={{ position:'absolute', top:'100%', left:0, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:8, boxShadow:'var(--shadow)', zIndex:100, minWidth:180 }}>
+                          {filtered.map(u => (
+                            <div key={u.id} onMouseDown={() => handleSelectMention(u)}
+                              style={{ padding:'8px 14px', cursor:'pointer', fontSize:13, color:'var(--text)', display:'flex', alignItems:'center', gap:8 }}
+                              onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
+                              onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                              <div style={{ width:24, height:24, borderRadius:'50%', background:'var(--accent)', color:'white', fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                {u.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}
+                              </div>
+                              {u.name}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
                   <button type="submit" className="btn btn-primary" disabled={addingNote || !noteText.trim()} style={{ alignSelf:'flex-end' }}>
                     <Plus size={14}/> Add
                   </button>

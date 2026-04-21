@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LayoutDashboard, Users2, CheckSquare, UsersRound, LogOut } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -59,6 +60,9 @@ export default function Layout() {
       </aside>
 
       <main className="main-content">
+        <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', padding:'12px 32px 0', gap:8 }}>
+          <NotificationBell />
+        </div>
         <Outlet />
       </main>
     </div>

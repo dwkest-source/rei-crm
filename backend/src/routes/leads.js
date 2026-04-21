@@ -208,7 +208,7 @@ router.delete('/:id', auth, async (req, res) => {
 
 // --- Notes ---
 router.post('/:id/notes', auth, async (req, res) => {
-  const { content } = req.body;
+  const { content, mentions } = req.body;
   if (!content) return res.status(400).json({ error: 'Content required' });
   try {
     const result = await pool.query(
@@ -221,8 +221,59 @@ router.post('/:id/notes', auth, async (req, res) => {
     );
     await pool.query('UPDATE leads SET updated_at = NOW() WHERE id = $1', [req.params.id]);
     const note = await pool.query('SELECT n.*, u.name as author_name FROM notes n LEFT JOIN users u ON n.user_id = u.id WHERE n.id = $1', [result.rows[0].id]);
+
+    // Handle @mentions
+    if (mentions && mentions.length > 0) {
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const leadResult = await pool.query('SELECT property_address, owner_first_name, owner_last_name FROM leads WHERE id = $1', [req.params.id]);
+      const lead = leadResult.rows[0];
+      const leadName = lead.property_address || [lead.owner_first_name, lead.owner_last_name].filter(Boolean).join(' ') || 'a lead';
+      const fromUser = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id]);
+      const fromName = fromUser.rows[0]?.name || 'Someone';
+
+      for (const userId of mentions) {
+        if (userId === req.user.id) continue; // don't notify yourself
+        const mentionedUser = await pool.query('SELECT id, name, email FROM users WHERE id = $1', [userId]);
+        if (!mentionedUser.rows[0]) continue;
+        const { name: toName, email: toEmail } = mentionedUser.rows[0];
+
+        // Create notification
+        await pool.query(
+          'INSERT INTO notifications (user_id, from_user_id, lead_id, note_id, message) VALUES ($1, $2, $3, $4, $5)',
+          [userId, req.user.id, req.params.id, result.rows[0].id, `${fromName} mentioned you in a note on ${leadName}`]
+        );
+
+        // Send email
+        try {
+          await resend.emails.send({
+            from: process.env.FROM_EMAIL || 'notifications@arkcapitalrealestate.com',
+            to: toEmail,
+            subject: `${fromName} mentioned you in REIFlow`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #4f6ef7;">You were mentioned in a note</h2>
+                <p><strong>${fromName}</strong> mentioned you in a note on <strong>${leadName}</strong>:</p>
+                <div style="background: #f5f7fa; border-left: 4px solid #4f6ef7; padding: 12px 16px; border-radius: 4px; margin: 16px 0;">
+                  <p style="margin: 0; color: #333;">${content}</p>
+                </div>
+                <a href="${process.env.APP_URL}/leads/${req.params.id}" 
+                   style="display: inline-block; background: #4f6ef7; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; margin-top: 8px;">
+                  View Lead
+                </a>
+                <p style="color: #999; font-size: 12px; margin-top: 24px;">REIFlow CRM</p>
+              </div>
+            `
+          });
+        } catch (emailErr) {
+          console.error('Email send failed:', emailErr);
+        }
+      }
+    }
+
     res.status(201).json(note.rows[0]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
