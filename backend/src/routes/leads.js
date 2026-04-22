@@ -7,7 +7,7 @@ const router = express.Router();
 // List leads with filters
 router.get('/', auth, async (req, res) => {
   try {
-    const { status, source, search, assigned_to, page = 1, limit = 50 } = req.query;
+    const { status, source, search, assigned_to, page = 1, limit = 50, sortBy = 'updated_at', sortDir = 'desc' } = req.query;
     const offset = (page - 1) * limit;
     const conditions = [];
     const vals = [];
@@ -43,7 +43,13 @@ router.get('/', auth, async (req, res) => {
         LEFT JOIN users u1 ON l.assigned_to = u1.id
         LEFT JOIN users u2 ON l.created_by = u2.id
         ${where}
-        ORDER BY l.updated_at DESC
+        ORDER BY ${
+          sortBy === 'next_task_date'
+            ? `next_task_date ${sortDir === 'asc' ? 'ASC NULLS LAST' : 'DESC NULLS LAST'}`
+            : sortBy === 'owner'
+            ? `l.owner_last_name ${sortDir === 'asc' ? 'ASC' : 'DESC'}, l.owner_first_name ${sortDir === 'asc' ? 'ASC' : 'DESC'}`
+            : `l.updated_at ${sortDir === 'asc' ? 'ASC' : 'DESC'}`
+        }
         LIMIT $${i} OFFSET $${i+1}
       `, [...vals, limit, offset]),
       pool.query(`SELECT COUNT(*) FROM leads l ${where}`, vals)

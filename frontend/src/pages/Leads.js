@@ -33,14 +33,14 @@ export default function Leads() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.getLeads({ search, status, source, page, limit, ...(user?.role === 'admin' && memberFilter ? { assigned_to: memberFilter } : {}) });
+      const data = await api.getLeads({ search, status, source, page, limit, sortBy: sortField, sortDir, ...(user?.role === 'admin' && memberFilter ? { assigned_to: memberFilter } : {}) });
       setLeads(data.leads);
       setTotal(data.total);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [search, status, source, page]);
 
-  useEffect(() => { setPage(1); }, [search, status, source, memberFilter]);
+  useEffect(() => { setPage(1); }, [search, status, source, memberFilter, sortField, sortDir]);
   useEffect(() => { if (user?.role === 'admin') { api.getUsers().then(setUsers).catch(() => {}); } }, [user]);
   useEffect(() => { load(); }, [load]);
 
@@ -54,25 +54,6 @@ export default function Leads() {
       setSortDir(field === 'next_task_date' ? 'asc' : 'desc');
     }
   };
-
-  const sortedLeads = [...leads].sort((a, b) => {
-    if (sortField === 'next_task_date') {
-      const aVal = a.next_task_date ? new Date(a.next_task_date) : new Date('9999-01-01');
-      const bVal = b.next_task_date ? new Date(b.next_task_date) : new Date('9999-01-01');
-      return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
-    }
-    if (sortField === 'updated_at') {
-      return sortDir === 'asc'
-        ? new Date(a.updated_at) - new Date(b.updated_at)
-        : new Date(b.updated_at) - new Date(a.updated_at);
-    }
-    if (sortField === 'owner') {
-      const aName = `${a.owner_last_name || ''} ${a.owner_first_name || ''}`.toLowerCase();
-      const bName = `${b.owner_last_name || ''} ${b.owner_first_name || ''}`.toLowerCase();
-      return sortDir === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
-    }
-    return 0;
-  });
 
   const SortHeader = ({ field, children }) => (
     <th onClick={() => handleSort(field)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}>
@@ -134,7 +115,7 @@ export default function Leads() {
             <tbody>
               {loading && <tr><td colSpan={8} className="table-empty">Loading...</td></tr>}
               {!loading && leads.length === 0 && <tr><td colSpan={8} className="table-empty">No leads found. Add your first lead!</td></tr>}
-              {sortedLeads.map(lead => (
+              {leads.map(lead => (
                 <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)}>
                   <td style={{ fontWeight: 600 }}>{lead.owner_first_name || ''} {lead.owner_last_name || ''}</td>
                   <td>{lead.property_address ? `${lead.property_address}${lead.property_city ? ', ' + lead.property_city : ''}` : '—'}</td>
