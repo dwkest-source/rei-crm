@@ -38,7 +38,7 @@ export default function Leads() {
       setTotal(data.total);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [search, status, source, page]);
+  }, [search, status, source, page, limit, memberFilter, user, sortField, sortDir]);
 
   useEffect(() => { setPage(1); }, [search, status, source, memberFilter, sortField, sortDir]);
   useEffect(() => { if (user?.role === 'admin') { api.getUsers().then(setUsers).catch(() => {}); } }, [user]);
