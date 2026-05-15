@@ -409,4 +409,51 @@ router.get('/stats/overview', auth, async (req, res) => {
   }
 });
 
+
+// Bulk CSV Import
+router.post('/import', auth, async (req, res) => {
+  const { leads } = req.body;
+  if (!Array.isArray(leads) || leads.length === 0) {
+    return res.status(400).json({ error: 'No leads provided' });
+  }
+  try {
+    let imported = 0;
+    let skipped = 0;
+    for (const lead of leads) {
+      const firstName = (lead['First Name'] || '').trim();
+      const lastName = (lead['Last Name'] || '').trim();
+      const address = (lead['Address'] || '').trim();
+      const phone1 = (lead['Phone Number 1'] || '').trim();
+      const phone2 = (lead['Phone Number 2'] || '').trim();
+      const notes = (lead['Notes'] || '').trim();
+
+      if (!firstName && !lastName && !address && !phone1) { skipped++; continue; }
+
+      const result = await pool.query(
+        `INSERT INTO leads (created_by, assigned_to, owner_first_name, owner_last_name, property_address, owner_phone, owner_phone2, status)
+         VALUES ($1, $1, $2, $3, $4, $5, $6, 'New Lead') RETURNING id`,
+        [req.user.id, firstName || null, lastName || null, address || null, phone1 || null, phone2 || null]
+      );
+
+      if (notes) {
+        await pool.query(
+          'INSERT INTO notes (lead_id, user_id, content) VALUES ($1, $2, $3)',
+          [result.rows[0].id, req.user.id, notes]
+        );
+      }
+
+      await pool.query(
+        'INSERT INTO activities (lead_id, user_id, type, description) VALUES ($1, $2, $3, $4)',
+        [result.rows[0].id, req.user.id, 'created', 'Lead imported via CSV']
+      );
+
+      imported++;
+    }
+    res.json({ imported, skipped });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error during import' });
+  }
+});
+
 module.exports = router;

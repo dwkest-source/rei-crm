@@ -52,6 +52,9 @@ export const api = {
   updateProperty: (leadId, propId, body) => request(`/leads/${leadId}/properties/${propId}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteProperty: (leadId, propId) => request(`/leads/${leadId}/properties/${propId}`, { method: 'DELETE' }),
 
+  // CSV Import
+  importLeads: (leads) => request('/leads/import', { method: 'POST', body: JSON.stringify({ leads }) }),
+
   // Notes
   addNote: (leadId, body) => request(`/leads/${leadId}/notes`, { method: 'POST', body: JSON.stringify(body) }),
   deleteNote: (leadId, noteId) => request(`/leads/${leadId}/notes/${noteId}`, { method: 'DELETE' }),

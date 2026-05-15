@@ -26,8 +26,8 @@ export default function Leads() {
   const [users, setUsers] = useState([]);
   const [memberFilter, setMemberFilter] = useState('');
   const [loading, setLoading] = useState(true);
-  const [sortField, setSortField] = useState('updated_at');
-  const [sortDir, setSortDir] = useState('desc');
+  const [sortField, setSortField] = useState(() => sessionStorage.getItem('leads_sortField') || 'updated_at');
+  const [sortDir, setSortDir] = useState(() => sessionStorage.getItem('leads_sortDir') || 'desc');
   const limit = 50;
 
   const load = useCallback(async () => {
@@ -48,10 +48,15 @@ export default function Leads() {
 
   const handleSort = (field) => {
     if (sortField === field) {
-      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+      const newDir = sortDir === 'asc' ? 'desc' : 'asc';
+      setSortDir(newDir);
+      sessionStorage.setItem('leads_sortDir', newDir);
     } else {
+      const newDir = field === 'next_task_date' ? 'asc' : 'desc';
       setSortField(field);
-      setSortDir(field === 'next_task_date' ? 'asc' : 'desc');
+      setSortDir(newDir);
+      sessionStorage.setItem('leads_sortField', field);
+      sessionStorage.setItem('leads_sortDir', newDir);
     }
   };
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { TrendingUp, Users2, CheckSquare, AlertCircle, Plus, Clock } from 'lucide-react';
+import { TrendingUp, Users2, CheckSquare, AlertCircle, Plus, Clock, FileUp } from 'lucide-react';
 
 const STATUS_ORDER = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
 
@@ -17,6 +17,9 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [recentLeads, setRecentLeads] = useState([]);
   const [dueTasks, setDueTasks] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const fileInputRef = React.useRef(null);
 
   useEffect(() => {
     const todayStart = new Date(); todayStart.setHours(0,0,0,0);
@@ -38,6 +41,50 @@ export default function Dashboard() {
     }).catch(console.error);
   }, []);
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) throw new Error('File appears empty');
+
+      // Parse CSV headers
+      const parseCSVLine = (line) => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          if (line[i] === '"') { inQuotes = !inQuotes; }
+          else if (line[i] === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+          else { current += line[i]; }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      const headers = parseCSVLine(lines[0]);
+      const leads = lines.slice(1).map(line => {
+        const values = parseCSVLine(line);
+        return headers.reduce((obj, h, i) => { obj[h] = values[i] || ''; return obj; }, {});
+      }).filter(r => Object.values(r).some(v => v.trim()));
+
+      const result = await api.importLeads(leads);
+      setImportResult({ success: true, imported: result.imported, skipped: result.skipped });
+      // Refresh stats
+      const [s, l] = await Promise.all([api.getStats(), api.getLeads({ limit: 8 })]);
+      setStats(s);
+      setRecentLeads(l.leads);
+    } catch (err) {
+      setImportResult({ success: false, error: err.message });
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
+
   const totalLeads = stats?.byStatus?.reduce((a, b) => a + parseInt(b.count), 0) || 0;
   const closedLeads = stats?.byStatus?.find(s => s.status === 'Closed')?.count || 0;
   const now = new Date();
@@ -52,9 +99,21 @@ export default function Dashboard() {
           <h1 className="page-title">Good morning, {user?.name?.split(' ')[0]} 👋</h1>
           <p className="page-subtitle">Here's what's happening with your pipeline today.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/leads')}>
-          <Plus size={15} /> New Lead
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {importResult && (
+            <span style={{ fontSize: 12, color: importResult.success ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
+              {importResult.success ? `✓ ${importResult.imported} leads imported${importResult.skipped ? `, ${importResult.skipped} skipped` : ''}` : `✗ ${importResult.error}`}
+            </span>
+          )}
+          <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleFileUpload} />
+          <button className="btn btn-ghost" onClick={() => fileInputRef.current?.click()} disabled={importing}
+            title="Import leads from CSV" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <FileUp size={15} /> {importing ? 'Importing...' : 'Import CSV'}
+          </button>
+          <button className="btn btn-primary" onClick={() => navigate('/leads')}>
+            <Plus size={15} /> New Lead
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-4" style={{ marginBottom: 24 }}>
