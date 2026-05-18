@@ -65,6 +65,21 @@ export default function LeadDetail() {
   const [editingTask, setEditingTask] = useState(null);
   const [propDetails, setPropDetails] = useState(null); // {bedrooms, bathrooms, sqft, lot_sqft, property_notes}
   const [savingProp, setSavingProp] = useState(false);
+  const [showOwnerModal, setShowOwnerModal] = useState(false);
+  const [pendingOwner, setPendingOwner] = useState(null);
+  const [changingOwner, setChangingOwner] = useState(false);
+
+  const handleChangeOwner = async () => {
+    if (!pendingOwner) return;
+    setChangingOwner(true);
+    try {
+      await api.updateLead(id, { assigned_to: pendingOwner.id });
+      setLead(l => ({ ...l, assigned_to: pendingOwner.id, assigned_to_name: pendingOwner.name }));
+      setShowOwnerModal(false);
+      setPendingOwner(null);
+    } catch (e) { console.error(e); }
+    finally { setChangingOwner(false); }
+  };
 
   const initPropDetails = (l) => ({
     bedrooms: l.bedrooms || '',
@@ -213,6 +228,13 @@ export default function LeadDetail() {
                     {ownerName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}
                   </div>
                   <span style={{ fontSize:13, fontWeight:600, color:'var(--text2)' }}>{ownerName}</span>
+                  {user?.role === 'admin' && (
+                    <button onClick={() => setShowOwnerModal(true)}
+                      style={{ marginLeft:4, background:'none', border:'none', cursor:'pointer', color:'var(--text3)', padding:'2px 4px', borderRadius:4, fontSize:11, display:'flex', alignItems:'center' }}
+                      title="Change owner">
+                      <Edit2 size={11} />
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -523,6 +545,49 @@ export default function LeadDetail() {
       </div>
 
       {showEdit && <LeadModal lead={lead} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); load(); }} />}
+
+      {/* Change Owner Modal */}
+      {showOwnerModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowOwnerModal(false)}>
+          <div className="modal modal-sm">
+            <div className="modal-header">
+              <h2 className="modal-title">Change Lead Owner</h2>
+              <button className="btn-icon" onClick={() => { setShowOwnerModal(false); setPendingOwner(null); }}><X size={16} /></button>
+            </div>
+            <div className="modal-body">
+              <p style={{ color:'var(--text2)', marginBottom:16, fontSize:13 }}>Select a new owner for this lead:</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {users.map(u => (
+                  <div key={u.id} onClick={() => setPendingOwner(u)}
+                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:8, border:`2px solid ${pendingOwner?.id === u.id ? 'var(--accent)' : 'var(--border)'}`, cursor:'pointer', background: pendingOwner?.id === u.id ? 'var(--accent-dim)' : 'var(--bg3)', transition:'all 0.15s' }}>
+                    <div style={{ width:28, height:28, borderRadius:'50%', background:'var(--accent)', color:'white', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      {u.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}
+                    </div>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:600, color:'var(--text)' }}>{u.name}</div>
+                      <div style={{ fontSize:11, color:'var(--text3)' }}>{u.role === 'admin' ? 'Admin' : 'Member'}</div>
+                    </div>
+                    {pendingOwner?.id === u.id && <div style={{ marginLeft:'auto', width:16, height:16, borderRadius:'50%', background:'var(--accent)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <svg viewBox="0 0 12 12" width="9" height="9" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                    </div>}
+                  </div>
+                ))}
+              </div>
+              {pendingOwner && (
+                <div style={{ marginTop:16, padding:'12px 14px', background:'var(--yellow-dim)', border:'1px solid var(--yellow)', borderRadius:8, fontSize:12, color:'var(--text2)' }}>
+                  ⚠️ This will reassign the lead to <strong>{pendingOwner.name}</strong>. They will be able to view and manage it.
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => { setShowOwnerModal(false); setPendingOwner(null); }}>Cancel</button>
+              <button className="btn btn-primary" disabled={!pendingOwner || changingOwner} onClick={handleChangeOwner}>
+                {changingOwner ? 'Saving...' : 'Confirm Change'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDeleteConfirm && (
         <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setShowDeleteConfirm(false)}>
