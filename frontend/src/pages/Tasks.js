@@ -27,9 +27,9 @@ export default function Tasks() {
       const data = await api.getAllTasks(user?.role === 'admin' && memberFilter ? { assigned_to: memberFilter } : {});
       setTasks(data);
     } finally { setLoading(false); }
-  }, []);
+  }, [memberFilter, user]);
 
-  useEffect(() => { load(); }, [load, memberFilter]);
+  useEffect(() => { load(); }, [load]);
   useEffect(() => { if (user?.role === 'admin') { api.getUsers().then(setUsers).catch(() => {}); } }, [user]);
 
   const handleToggle = async (task) => {

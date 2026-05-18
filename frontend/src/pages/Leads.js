@@ -18,13 +18,13 @@ export default function Leads() {
   const [leads, setLeads] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
-  const [source, setSource] = useState('');
+  const [search, setSearch] = useState(() => sessionStorage.getItem('leads_search') || '');
+  const [status, setStatus] = useState(() => sessionStorage.getItem('leads_status') || '');
+  const [source, setSource] = useState(() => sessionStorage.getItem('leads_source') || '');
   const [showModal, setShowModal] = useState(false);
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
-  const [memberFilter, setMemberFilter] = useState('');
+  const [memberFilter, setMemberFilter] = useState(() => sessionStorage.getItem('leads_memberFilter') || '');
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState(() => sessionStorage.getItem('leads_sortField') || 'updated_at');
   const [sortDir, setSortDir] = useState(() => sessionStorage.getItem('leads_sortDir') || 'desc');
@@ -81,24 +81,24 @@ export default function Leads() {
       <div className="filter-bar">
         <div className="search-wrap">
           <Search />
-          <input className="search-input" placeholder="Search name, address, phone..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="search-input" placeholder="Search name, address, phone..." value={search} onChange={e => { setSearch(e.target.value); sessionStorage.setItem('leads_search', e.target.value); }} />
         </div>
-        <select className="select-filter" value={status} onChange={e => setStatus(e.target.value)}>
+        <select className="select-filter" value={status} onChange={e => { setStatus(e.target.value); sessionStorage.setItem('leads_status', e.target.value); }}>
           <option value="">All Statuses</option>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
-        <select className="select-filter" value={source} onChange={e => setSource(e.target.value)}>
+        <select className="select-filter" value={source} onChange={e => { setSource(e.target.value); sessionStorage.setItem('leads_source', e.target.value); }}>
           <option value="">All Sources</option>
           {SOURCES.map(s => <option key={s}>{s}</option>)}
         </select>
         {user?.role === 'admin' && (
-          <select className="select-filter" value={memberFilter} onChange={e => setMemberFilter(e.target.value)}>
+          <select className="select-filter" value={memberFilter} onChange={e => { setMemberFilter(e.target.value); sessionStorage.setItem('leads_memberFilter', e.target.value); }}>
             <option value="">All Members</option>
             {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         )}
         {(search || status || source || memberFilter) && (
-          <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setStatus(''); setSource(''); setMemberFilter(''); }}>Clear</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setStatus(''); setSource(''); setMemberFilter(''); ['leads_search','leads_status','leads_source','leads_memberFilter'].forEach(k => sessionStorage.removeItem(k)); }}>Clear</button>
         )}
       </div>
 
