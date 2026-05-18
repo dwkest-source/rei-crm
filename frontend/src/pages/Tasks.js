@@ -5,22 +5,18 @@ import { useAuth } from '../context/AuthContext';
 import { Calendar, MapPin, User, AlertTriangle, CheckSquare } from 'lucide-react';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : null;
-const isOverdue = (d) => { if (!d) return false; const due = new Date(d); const now = new Date(); return due < now; };
-const isToday = (d) => { if (!d) return false; const due = new Date(d); const now = new Date(); const end = new Date(); end.setHours(23,59,59,999); return due >= now && due <= end; };
-const isSoon = (d) => {
-  if (!d) return false;
-  const diff = new Date(d) - new Date();
-  return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000;
-};
+const isOverdue = (d) => { if (!d) return false; const due = new Date(d); const today = new Date(); today.setHours(0,0,0,0); return due < today; };
+const isToday = (d) => { if (!d) return false; const due = new Date(d); const today = new Date(); today.setHours(0,0,0,0); const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1); return due >= today && due < tomorrow; };
+const isSoon = (d) => { if (!d) return false; const due = new Date(d); const today = new Date(); today.setHours(0,0,0,0); const in3 = new Date(today); in3.setDate(in3.getDate()+3); return due > today && due <= in3; };
 
 export default function Tasks() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('pending');
+  const [filter, setFilter] = useState(() => sessionStorage.getItem('tasks_filter') || 'pending');
   const [users, setUsers] = useState([]);
-  const [memberFilter, setMemberFilter] = useState('');
+  const [memberFilter, setMemberFilter] = useState(() => sessionStorage.getItem('tasks_memberFilter') || '');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,7 +69,7 @@ export default function Tasks() {
       {/* Member filter for admins */}
       {user?.role === 'admin' && (
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <select className="select-filter" value={memberFilter} onChange={e => { setMemberFilter(e.target.value); }} style={{ minWidth: 180 }}>
+          <select className="select-filter" value={memberFilter} onChange={e => { setMemberFilter(e.target.value); sessionStorage.setItem('tasks_memberFilter', e.target.value); }} style={{ minWidth: 180 }}>
             <option value="">All Members</option>
             {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
@@ -95,7 +91,7 @@ export default function Tasks() {
             key={label}
             className="stat-card"
             style={{ cursor: 'pointer', border: filter === f ? `1px solid ${color}` : undefined, transition: 'all 0.15s' }}
-            onClick={() => setFilter(f)}
+            onClick={() => { setFilter(f); sessionStorage.setItem('tasks_filter', f); }}
           >
             <div className="stat-value" style={{ color }}>{count}</div>
             <div className="stat-label">{label}</div>
@@ -144,7 +140,7 @@ export default function Tasks() {
                 {task.description && <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1 }}>{task.description}</div>}
                 <div className="task-meta">
                   {task.due_date && (
-                    <span style={{ color: isOverdue(task.due_date) && task.status !== 'Completed' ? 'var(--red)' : isToday(task.due_date) && task.status !== 'Completed' ? 'var(--green)' : isSoon(task.due_date) ? 'var(--yellow)' : 'var(--text3)' }}>
+                    <span style={{ color: isOverdue(task.due_date) && task.status !== 'Completed' ? 'var(--red)' : isToday(task.due_date) && task.status !== 'Completed' ? 'var(--green)' : isSoon(task.due_date) && task.status !== 'Completed' ? 'var(--yellow)' : 'var(--text3)' }}>
                       <Calendar />
                       {isOverdue(task.due_date) && task.status !== 'Completed' && <AlertTriangle />}
                       {fmtDate(task.due_date)}
