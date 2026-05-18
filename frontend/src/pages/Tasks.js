@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { Calendar, MapPin, User, AlertTriangle, CheckSquare } from 'lucide-react';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : null;
-const isOverdue = (d) => d && new Date(d) < new Date();
+const isOverdue = (d) => { if (!d) return false; const due = new Date(d); const now = new Date(); return due < now; };
+const isToday = (d) => { if (!d) return false; const due = new Date(d); const now = new Date(); const end = new Date(); end.setHours(23,59,59,999); return due >= now && due <= end; };
 const isSoon = (d) => {
   if (!d) return false;
   const diff = new Date(d) - new Date();
@@ -143,7 +144,7 @@ export default function Tasks() {
                 {task.description && <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1 }}>{task.description}</div>}
                 <div className="task-meta">
                   {task.due_date && (
-                    <span style={{ color: isOverdue(task.due_date) && task.status !== 'Completed' ? 'var(--red)' : isSoon(task.due_date) ? 'var(--yellow)' : 'var(--text3)' }}>
+                    <span style={{ color: isOverdue(task.due_date) && task.status !== 'Completed' ? 'var(--red)' : isToday(task.due_date) && task.status !== 'Completed' ? 'var(--green)' : isSoon(task.due_date) ? 'var(--yellow)' : 'var(--text3)' }}>
                       <Calendar />
                       {isOverdue(task.due_date) && task.status !== 'Completed' && <AlertTriangle />}
                       {fmtDate(task.due_date)}

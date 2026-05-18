@@ -188,7 +188,7 @@ export default function Dashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div className="section-title" style={{ margin: 0 }}>Today's Tasks</div>
               {dueTasks.length > 0 && (
-                <span style={{ background: dueTasks.some(t => new Date(t.due_date) < new Date()) ? 'var(--red)' : 'var(--accent)', color: 'white', fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 10 }}>
+                <span style={{ background: dueTasks.some(t => new Date(t.due_date) < new Date()) ? 'var(--red)' : 'var(--green)', color: 'white', fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 10 }}>
                   {dueTasks.length}
                 </span>
               )}
@@ -207,7 +207,7 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', gap: 8, marginTop: 3 }}>
                   {task.property_address && <span style={{ fontSize: 11.5, color: 'var(--text3)' }}>{task.property_address}</span>}
                   {task.owner_first_name && !task.property_address && <span style={{ fontSize: 11.5, color: 'var(--text3)' }}>{task.owner_first_name} {task.owner_last_name}</span>}
-                  {task.due_date && <span style={{ fontSize: 11.5, color: isOverdue ? 'var(--red)' : 'var(--text3)' }}>
+                  {task.due_date && <span style={{ fontSize: 11.5, color: isOverdue ? 'var(--red)' : 'var(--green)' }}>
                     Due {new Date(task.due_date).toLocaleDateString()}
                   </span>}
                 </div>

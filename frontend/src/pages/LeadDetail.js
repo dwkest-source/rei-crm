@@ -24,7 +24,8 @@ const getStatusClass = (s) => {
 const fmt$ = (n) => n ? '$' + Number(n).toLocaleString() : null;
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : 'Unknown';
 const fmtDateTime = (d) => d ? new Date(d).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '';
-const isOverdue = (d) => d && new Date(d) < new Date();
+const isOverdue = (d) => { if (!d) return false; return new Date(d) < new Date(); };
+const isToday = (d) => { if (!d) return false; const due = new Date(d); const now = new Date(); const end = new Date(); end.setHours(23,59,59,999); return due >= now && due <= end; };
 
 const InfoRow = ({ label, value, link }) => {
   if (!value) return null;
