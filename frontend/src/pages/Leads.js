@@ -128,7 +128,7 @@ export default function Leads() {
                   <td><span className="source-badge">{lead.source || '—'}</span></td>
                   <td><span className={`status-badge ${getStatusClass(lead.status)}`}>{lead.status}</span></td>
                   <td>{lead.open_tasks || 0}</td>
-                  <td style={{ fontSize: 12, color: lead.next_task_date && new Date(lead.next_task_date) < new Date() ? 'var(--red)' : 'var(--text3)', fontWeight: lead.next_task_date && new Date(lead.next_task_date) < new Date() ? 600 : 400 }}>
+                  <td style={{ fontSize: 12, color: (() => { if (!lead.next_task_date) return 'var(--text3)'; const due = new Date(lead.next_task_date); const today = new Date(); today.setHours(0,0,0,0); const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1); if (due < today) return 'var(--red)'; if (due >= today && due < tomorrow) return 'var(--green)'; return 'var(--text3)'; })(), fontWeight: lead.next_task_date && (() => { const due = new Date(lead.next_task_date); const today = new Date(); today.setHours(0,0,0,0); return due < today; })() ? 600 : 400 }}>
                     {lead.next_task_date ? new Date(lead.next_task_date).toLocaleDateString() : '—'}
                   </td>
                   <td style={{ color: 'var(--text3)', fontSize: 12 }}>{new Date(lead.updated_at).toLocaleDateString()}</td>
