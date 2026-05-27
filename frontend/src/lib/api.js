@@ -52,12 +52,14 @@ export const api = {
   updateProperty: (leadId, propId, body) => request(`/leads/${leadId}/properties/${propId}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteProperty: (leadId, propId) => request(`/leads/${leadId}/properties/${propId}`, { method: 'DELETE' }),
 
-  // CSV Import
-  importLeads: (leads) => request('/leads/import', { method: 'POST', body: JSON.stringify({ leads }) }),
-
   // Notes
   addNote: (leadId, body) => request(`/leads/${leadId}/notes`, { method: 'POST', body: JSON.stringify(body) }),
   deleteNote: (leadId, noteId) => request(`/leads/${leadId}/notes/${noteId}`, { method: 'DELETE' }),
+
+  // Note interactions
+  likeNote: (leadId, noteId) => request(`/leads/${leadId}/notes/${noteId}/like`, { method: 'POST' }),
+  replyNote: (leadId, noteId, body) => request(`/leads/${leadId}/notes/${noteId}/replies`, { method: 'POST', body: JSON.stringify(body) }),
+  deleteReply: (leadId, noteId, replyId) => request(`/leads/${leadId}/notes/${noteId}/replies/${replyId}`, { method: 'DELETE' }),
 
   // Tasks
   addTask: (leadId, body) => request(`/leads/${leadId}/tasks`, { method: 'POST', body: JSON.stringify(body) }),

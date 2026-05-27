@@ -59,6 +59,9 @@ export default function LeadDetail() {
   const [mentionPos, setMentionPos] = useState(0);
   const [mentions, setMentions] = useState([]);
   const noteRef = React.useRef(null);
+  const [replyingTo, setReplyingTo] = useState(null); // noteId
+  const [replyText, setReplyText] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskForm, setTaskForm] = useState({ title:'', description:'', due_date:'', priority:'Medium', assigned_to:'' });
   const [users, setUsers] = useState([]);
@@ -143,6 +146,46 @@ export default function LeadDetail() {
     finally { setAddingNote(false); }
   };
   const handleDeleteNote = async (noteId) => { await api.deleteNote(id, noteId); setLead(l => ({ ...l, notes: l.notes.filter(n => n.id !== noteId) })); };
+
+  const handleLike = async (noteId) => {
+    try {
+      const res = await api.likeNote(id, noteId);
+      setLead(l => ({ ...l, notes: l.notes.map(n => {
+        if (n.id !== noteId) return n;
+        const likes = n.likes || [];
+        const liked = res.liked;
+        const newLikes = liked
+          ? [...likes, { user_id: user.id, user_name: user.name }]
+          : likes.filter(lk => lk.user_id !== user.id);
+        return { ...n, likes: newLikes, like_count: res.count };
+      })}));
+    } catch(e) { console.error(e); }
+  };
+
+  const handleReply = async (noteId) => {
+    if (!replyText.trim()) return;
+    setSubmittingReply(true);
+    try {
+      const reply = await api.replyNote(id, noteId, { content: replyText });
+      setLead(l => ({ ...l, notes: l.notes.map(n => {
+        if (n.id !== noteId) return n;
+        return { ...n, replies: [...(n.replies || []), reply] };
+      })}));
+      setReplyText('');
+      setReplyingTo(null);
+    } catch(e) { console.error(e); }
+    finally { setSubmittingReply(false); }
+  };
+
+  const handleDeleteReply = async (noteId, replyId) => {
+    try {
+      await api.deleteReply(id, noteId, replyId);
+      setLead(l => ({ ...l, notes: l.notes.map(n => {
+        if (n.id !== noteId) return n;
+        return { ...n, replies: (n.replies || []).filter(r => r.id !== replyId) };
+      })}));
+    } catch(e) { console.error(e); }
+  };
   const handleAddTask = async (e) => {
     e.preventDefault();
     try {
@@ -445,7 +488,10 @@ export default function LeadDetail() {
                   </button>
                 </form>
                 {lead.notes?.length === 0 && <div className="empty-state"><FileText /><p>No notes yet</p></div>}
-                {lead.notes?.map(note => (
+                {lead.notes?.map(note => {
+                  const likedByMe = (note.likes || []).some(lk => lk.user_id === user.id);
+                  const likeCount = parseInt(note.like_count || 0);
+                  return (
                   <div className="note-item" key={note.id}>
                     <div className="note-meta">
                       <span className="note-author">{note.author_name}</span>
@@ -457,8 +503,72 @@ export default function LeadDetail() {
                       </div>
                     </div>
                     <div className="note-content">{note.content}</div>
+
+                    {/* Like + Reply actions */}
+                    <div style={{ display:'flex', gap:12, marginTop:8, alignItems:'center' }}>
+                      <button
+                        onClick={() => handleLike(note.id)}
+                        style={{ display:'flex', alignItems:'center', gap:4, background:'none', border:'none', cursor:'pointer',
+                          color: likedByMe ? 'var(--accent)' : 'var(--text3)', fontSize:12, fontWeight: likedByMe ? 700 : 400,
+                          padding:'2px 6px', borderRadius:4, transition:'all 0.15s' }}
+                        title={(note.likes||[]).map(l=>l.user_name).join(', ') || 'Like'}
+                      >
+                        <ThumbsUp size={12} fill={likedByMe ? 'var(--accent)' : 'none'} />
+                        {likeCount > 0 && <span>{likeCount}</span>}
+                      </button>
+                      <button
+                        onClick={() => { setReplyingTo(replyingTo === note.id ? null : note.id); setReplyText(''); }}
+                        style={{ display:'flex', alignItems:'center', gap:4, background:'none', border:'none', cursor:'pointer',
+                          color:'var(--text3)', fontSize:12, padding:'2px 6px', borderRadius:4 }}
+                      >
+                        <CornerDownRight size={12} /> Reply
+                      </button>
+                    </div>
+
+                    {/* Replies */}
+                    {(note.replies || []).length > 0 && (
+                      <div style={{ marginTop:8, paddingLeft:16, borderLeft:'2px solid var(--border)' }}>
+                        {(note.replies || []).map(reply => (
+                          <div key={reply.id} style={{ marginBottom:8, padding:'8px 10px', background:'var(--bg)', borderRadius:6 }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:3 }}>
+                              <span style={{ fontSize:12, fontWeight:600, color:'var(--accent2)' }}>{reply.author_name}</span>
+                              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                                <span style={{ fontSize:11, color:'var(--text3)' }}>{fmtDateTime(reply.created_at)}</span>
+                                {(reply.user_id === user.id || user.role === 'admin') && (
+                                  <button className="btn-icon" style={{ padding:2 }} onClick={() => handleDeleteReply(note.id, reply.id)}>
+                                    <Trash2 style={{ width:11, height:11 }}/>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div style={{ fontSize:13, color:'var(--text2)' }}>{reply.content}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Reply input */}
+                    {replyingTo === note.id && (
+                      <div style={{ marginTop:8, paddingLeft:16, borderLeft:'2px solid var(--accent)', display:'flex', gap:8 }}>
+                        <textarea
+                          className="form-input"
+                          style={{ flex:1, minHeight:52, fontSize:13, resize:'none' }}
+                          placeholder="Write a reply..."
+                          value={replyText}
+                          onChange={e => setReplyText(e.target.value)}
+                          autoFocus
+                        />
+                        <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                          <button className="btn btn-primary btn-sm" disabled={!replyText.trim() || submittingReply} onClick={() => handleReply(note.id)}>
+                            {submittingReply ? '...' : 'Reply'}
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => { setReplyingTo(null); setReplyText(''); }}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </>}
 
               {tab === 'tasks' && <>

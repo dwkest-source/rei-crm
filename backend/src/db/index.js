@@ -114,6 +114,23 @@ const initDB = async () => {
         created_at TIMESTAMP DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS note_likes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(note_id, user_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS note_replies (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+        lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id),
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS activities (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
@@ -141,6 +158,24 @@ const initDB = async () => {
         note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
         message TEXT NOT NULL,
         read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    // Migrate: add note_likes and note_replies
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS note_likes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(note_id, user_id)
+      );
+      CREATE TABLE IF NOT EXISTS note_replies (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+        lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id),
+        content TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);

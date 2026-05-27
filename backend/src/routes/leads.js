@@ -85,7 +85,13 @@ router.get('/:id', auth, async (req, res) => {
         WHERE l.id = $1
       `, [req.params.id]),
       pool.query(`
-        SELECT n.*, u.name as author_name FROM notes n 
+        SELECT n.*, u.name as author_name,
+          (SELECT COUNT(*) FROM note_likes WHERE note_id = n.id) as like_count,
+          (SELECT json_agg(json_build_object('id', nl.id, 'user_id', nl.user_id, 'user_name', ul.name) ORDER BY nl.created_at)
+           FROM note_likes nl LEFT JOIN users ul ON nl.user_id = ul.id WHERE nl.note_id = n.id) as likes,
+          (SELECT json_agg(json_build_object('id', r.id, 'content', r.content, 'author_name', ur.name, 'user_id', r.user_id, 'created_at', r.created_at) ORDER BY r.created_at)
+           FROM note_replies r LEFT JOIN users ur ON r.user_id = ur.id WHERE r.note_id = n.id) as replies
+        FROM notes n 
         LEFT JOIN users u ON n.user_id = u.id 
         WHERE n.lead_id = $1 ORDER BY n.created_at DESC
       `, [req.params.id]),
@@ -291,6 +297,58 @@ router.post('/:id/notes', auth, async (req, res) => {
 router.delete('/:id/notes/:noteId', auth, async (req, res) => {
   try {
     await pool.query('DELETE FROM notes WHERE id = $1', [req.params.noteId]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+// --- Note Likes ---
+router.post('/:id/notes/:noteId/like', auth, async (req, res) => {
+  try {
+    // Toggle like
+    const existing = await pool.query(
+      'SELECT id FROM note_likes WHERE note_id = $1 AND user_id = $2',
+      [req.params.noteId, req.user.id]
+    );
+    if (existing.rows.length > 0) {
+      await pool.query('DELETE FROM note_likes WHERE note_id = $1 AND user_id = $2', [req.params.noteId, req.user.id]);
+    } else {
+      await pool.query('INSERT INTO note_likes (note_id, user_id) VALUES ($1, $2)', [req.params.noteId, req.user.id]);
+    }
+    const count = await pool.query('SELECT COUNT(*) FROM note_likes WHERE note_id = $1', [req.params.noteId]);
+    const liked = existing.rows.length === 0;
+    res.json({ liked, count: parseInt(count.rows[0].count) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// --- Note Replies ---
+router.post('/:id/notes/:noteId/replies', auth, async (req, res) => {
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: 'Content required' });
+  try {
+    const result = await pool.query(
+      'INSERT INTO note_replies (note_id, lead_id, user_id, content) VALUES ($1, $2, $3, $4) RETURNING *',
+      [req.params.noteId, req.params.id, req.user.id, content]
+    );
+    const reply = await pool.query(
+      'SELECT r.*, u.name as author_name FROM note_replies r LEFT JOIN users u ON r.user_id = u.id WHERE r.id = $1',
+      [result.rows[0].id]
+    );
+    res.status(201).json(reply.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.delete('/:id/notes/:noteId/replies/:replyId', auth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM note_replies WHERE id = $1', [req.params.replyId]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
