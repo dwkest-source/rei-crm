@@ -31,6 +31,10 @@ router.get('/', auth, async (req, res) => {
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
+    // Determine whose tasks to show for next_task_date
+    // If admin filtering by member, show that member's tasks; if admin with no filter, show their own; members always see their own
+    const taskUserId = (req.user.role === 'admin' && assigned_to) ? assigned_to : req.user.id;
+
     const [leadsResult, countResult] = await Promise.all([
       pool.query(`
         SELECT l.*, 
@@ -38,7 +42,7 @@ router.get('/', auth, async (req, res) => {
           u2.name as created_by_name,
           (SELECT COUNT(*) FROM notes WHERE lead_id = l.id) as note_count,
           (SELECT COUNT(*) FROM tasks WHERE lead_id = l.id AND status != 'Completed') as open_tasks,
-          (SELECT MIN(due_date) FROM tasks WHERE lead_id = l.id AND status != 'Completed' AND due_date IS NOT NULL) as next_task_date
+          (SELECT MIN(due_date) FROM tasks WHERE lead_id = l.id AND status != 'Completed' AND due_date IS NOT NULL AND assigned_to = $${i+2}) as next_task_date
         FROM leads l
         LEFT JOIN users u1 ON l.assigned_to = u1.id
         LEFT JOIN users u2 ON l.created_by = u2.id
@@ -51,7 +55,7 @@ router.get('/', auth, async (req, res) => {
             : `l.updated_at ${sortDir === 'asc' ? 'ASC' : 'DESC'}`
         }
         LIMIT $${i} OFFSET $${i+1}
-      `, [...vals, limit, offset]),
+      `, [...vals, limit, offset, taskUserId]),
       pool.query(`SELECT COUNT(*) FROM leads l ${where}`, vals)
     ]);
 
@@ -126,8 +130,8 @@ router.post('/', auth, async (req, res) => {
     const cols = ['created_by'];
     const vals = [req.user.id];
     let i = 2;
-    // Auto-assign to creator if they're not admin
-    if (req.user.role !== 'admin' && !req.body.assigned_to) {
+    // Auto-assign to creator if no assigned_to provided (applies to all roles)
+    if (!req.body.assigned_to) {
       cols.push('assigned_to');
       vals.push(req.user.id);
       i++;
