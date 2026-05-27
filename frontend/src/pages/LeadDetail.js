@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Phone, MapPin, Edit2, Trash2, Plus, CheckSquare, FileText, Activity, Calendar, User, AlertTriangle, X } from 'lucide-react';
+import { ArrowLeft, Phone, MapPin, Edit2, Trash2, Plus, CheckSquare, FileText, Activity, Calendar, User, AlertTriangle, X, ThumbsUp, CornerDownRight } from 'lucide-react';
 import LeadModal from '../components/LeadModal';
 
 const STATUSES = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
