@@ -78,6 +78,7 @@ export default function LeadDetail() {
   const [propDetails, setPropDetails] = useState(null); // {bedrooms, bathrooms, sqft, lot_sqft, property_notes}
   const [savingProp, setSavingProp] = useState(false);
   const [showOwnerModal, setShowOwnerModal] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
   const [pendingOwner, setPendingOwner] = useState(null);
   const [changingOwner, setChangingOwner] = useState(false);
 
@@ -110,7 +111,23 @@ export default function LeadDetail() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { api.getUsers().catch(() => []).then(u => setUsers(u || [])); }, []);
 
-  const handleStatusChange = async (status) => { await api.updateLead(id, { status }); setLead(l => ({ ...l, status })); };
+  const handleStatusChange = async (status) => {
+    if (status === lead.status) return;
+    setPendingStatus(status);
+  };
+
+  const confirmStatusChange = async () => {
+    if (!pendingStatus) return;
+    try {
+      await api.updateLead(id, { status: pendingStatus });
+      setLead(l => ({ ...l, status: pendingStatus }));
+      // If marked dead, clear all tasks locally
+      if (pendingStatus === 'Dead') {
+        setLead(l => ({ ...l, tasks: l.tasks?.map(t => ({ ...t, status: 'Completed' })) || [] }));
+      }
+    } catch (e) { console.error(e); }
+    finally { setPendingStatus(null); }
+  };
   const handleSavePropDetails = async () => {
     setSavingProp(true);
     try {
@@ -437,7 +454,7 @@ export default function LeadDetail() {
               };
               const color = colors[s] || { bg: 'var(--bg3)', text: 'var(--text2)' };
               return (
-                <button key={s} onClick={() => handleStatusChange(s)}
+                <button key={s} onClick={() => handleStatusChange(s)} disabled={lead.status === s}
                   style={{
                     flex: 1, padding: '11px 4px', border: 'none', borderRight: i < STATUSES.length - 1 ? '1px solid rgba(255,255,255,0.15)' : 'none',
                     cursor: 'pointer', fontSize: 12, fontWeight: 600, textAlign: 'center', transition: 'all 0.15s', letterSpacing: '0.01em',
@@ -702,6 +719,43 @@ export default function LeadDetail() {
               <button className="btn btn-ghost" onClick={() => { setShowOwnerModal(false); setPendingOwner(null); }}>Cancel</button>
               <button className="btn btn-primary" disabled={!pendingOwner || changingOwner} onClick={handleChangeOwner}>
                 {changingOwner ? 'Saving...' : 'Confirm Change'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Change Confirmation */}
+      {pendingStatus && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setPendingStatus(null)}>
+          <div className="modal modal-sm">
+            <div className="modal-header">
+              <h2 className="modal-title" style={{ color: pendingStatus === 'Dead' ? 'var(--red)' : 'var(--text)' }}>
+                {pendingStatus === 'Dead' ? '⚠️ Mark as Dead?' : 'Change Status?'}
+              </h2>
+              <button className="btn-icon" onClick={() => setPendingStatus(null)}><X size={16} /></button>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text2)', fontSize: 13 }}>
+                {pendingStatus === 'Dead'
+                  ? <>You're about to mark <strong>{lead.owner_first_name} {lead.owner_last_name}</strong> as <strong>Dead</strong>.</>
+                  : <>Change status from <strong>{lead.status}</strong> to <strong>{pendingStatus}</strong>?</>
+                }
+              </p>
+              {pendingStatus === 'Dead' && (
+                <div style={{ marginTop: 12, padding: '12px 14px', background: 'var(--red-dim)', border: '1px solid var(--red)', borderRadius: 8, fontSize: 13, color: 'var(--red)' }}>
+                  ⚠️ All open tasks on this lead will be marked as completed.
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setPendingStatus(null)}>Cancel</button>
+              <button
+                className="btn"
+                style={{ background: pendingStatus === 'Dead' ? 'var(--red)' : 'var(--accent)', color: 'white' }}
+                onClick={confirmStatusChange}
+              >
+                {pendingStatus === 'Dead' ? 'Yes, Mark as Dead' : `Move to ${pendingStatus}`}
               </button>
             </div>
           </div>

@@ -226,6 +226,13 @@ router.patch('/:id', auth, async (req, res) => {
         'INSERT INTO activities (lead_id, user_id, type, description) VALUES ($1, $2, $3, $4)',
         [req.params.id, req.user.id, 'status_change', `Status changed to: ${req.body.status}`]
       );
+      // If marked dead, complete all open tasks
+      if (req.body.status === 'Dead') {
+        await pool.query(
+          "UPDATE tasks SET status = 'Completed', updated_at = NOW() WHERE lead_id = $1 AND status != 'Completed'",
+          [req.params.id]
+        );
+      }
     }
 
     res.json(result.rows[0]);
