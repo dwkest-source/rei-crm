@@ -24,6 +24,15 @@ const getStatusClass = (s) => {
 const fmt$ = (n) => n ? '$' + Number(n).toLocaleString() : null;
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : 'Unknown';
 const fmtDateTime = (d) => d ? new Date(d).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '';
+
+const formatPhone = (val) => {
+  const digits = val.replace(/\D/g, '').slice(0, 10);
+  if (digits.length === 0) return '';
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+};
+const isValidPhone = (val) => val.replace(/\D/g, '').length === 10;
 const isOverdue = (d) => d && new Date(d) < new Date();
 
 const InfoRow = ({ label, value, link }) => {

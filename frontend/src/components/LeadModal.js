@@ -3,6 +3,15 @@ import { api } from '../lib/api';
 import { X, Plus, Trash2 } from 'lucide-react';
 import AddressAutocomplete from './AddressAutocomplete';
 
+
+const formatPhone = (val) => {
+  const digits = val.replace(/\D/g, '').slice(0, 10);
+  if (digits.length === 0) return '';
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+};
+const isValidPhone = (val) => val.replace(/\D/g, '').length === 10;
 const STATUSES = ['New Lead','Post-Appointment','Under Contract','Closed','Dead'];
 const SOURCES = ['Direct Mail','Cold Call','Cold Text','LaunchControl','Driving for Dollars','Referral','Website','MLS','Wholesaler','Other'];
 const PROPERTY_TYPES = ['Single Family','Multi-Family','Duplex','Triplex','Fourplex','Condo','Townhouse','Mobile Home','Land','Commercial','Other'];
@@ -38,7 +47,14 @@ export default function LeadModal({ lead, onClose, onSaved }) {
   const inp = (key, label, opts = {}) => (
     <div className="form-group">
       <label className="form-label">{label}</label>
-      <input className="form-input" value={form[key] || ''} onChange={e => set(key, e.target.value)} {...opts} />
+      <input className="form-input" value={form[key] || ''} onChange={e => {
+        if (opts.type === 'tel') {
+          const formatted = formatPhone(e.target.value);
+          set(key, formatted);
+        } else {
+          set(key, e.target.value);
+        }
+      }} {...opts} />
     </div>
   );
   const sel = (key, label, options, placeholder = 'Select...') => (

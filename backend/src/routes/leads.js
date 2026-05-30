@@ -4,6 +4,29 @@ const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Helper: send notification + email
+const sendNotification = async (pool, resend, { toUserId, fromUserId, leadId, noteId, message, subject, html }) => {
+  if (!toUserId || toUserId === fromUserId) return; // don't notify yourself
+  try {
+    await pool.query(
+      'INSERT INTO notifications (user_id, from_user_id, lead_id, note_id, message) VALUES ($1, $2, $3, $4, $5)',
+      [toUserId, fromUserId, leadId, noteId, message]
+    );
+    const toUser = await pool.query('SELECT email FROM users WHERE id = $1', [toUserId]);
+    if (toUser.rows[0]?.email && process.env.RESEND_API_KEY) {
+      try {
+        await resend.emails.send({
+          from: process.env.FROM_EMAIL || 'notifications@arkcapitalrealestate.com',
+          to: toUser.rows[0].email,
+          subject,
+          html,
+        });
+      } catch (e) { console.error('Email failed:', e); }
+    }
+  } catch (e) { console.error('Notification failed:', e); }
+};
+
+
 // List leads with filters
 router.get('/', auth, async (req, res) => {
   try {
@@ -307,7 +330,6 @@ router.delete('/:id/notes/:noteId', auth, async (req, res) => {
 // --- Note Likes ---
 router.post('/:id/notes/:noteId/like', auth, async (req, res) => {
   try {
-    // Toggle like
     const existing = await pool.query(
       'SELECT id FROM note_likes WHERE note_id = $1 AND user_id = $2',
       [req.params.noteId, req.user.id]
@@ -316,6 +338,36 @@ router.post('/:id/notes/:noteId/like', auth, async (req, res) => {
       await pool.query('DELETE FROM note_likes WHERE note_id = $1 AND user_id = $2', [req.params.noteId, req.user.id]);
     } else {
       await pool.query('INSERT INTO note_likes (note_id, user_id) VALUES ($1, $2)', [req.params.noteId, req.user.id]);
+
+      // Notify note author
+      const noteResult = await pool.query('SELECT user_id, content FROM notes WHERE id = $1', [req.params.noteId]);
+      const note = noteResult.rows[0];
+      const lead = await pool.query('SELECT property_address, owner_first_name, owner_last_name FROM leads WHERE id = $1', [req.params.id]);
+      const leadName = lead.rows[0]?.property_address || [lead.rows[0]?.owner_first_name, lead.rows[0]?.owner_last_name].filter(Boolean).join(' ') || 'a lead';
+      const fromUser = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id]);
+      const fromName = fromUser.rows[0]?.name || 'Someone';
+
+      if (note?.user_id) {
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        await sendNotification(pool, resend, {
+          toUserId: note.user_id,
+          fromUserId: req.user.id,
+          leadId: req.params.id,
+          noteId: req.params.noteId,
+          message: `${fromName} liked your note on ${leadName}`,
+          subject: `${fromName} liked your note — REIFlow`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+            <h2 style="color:#4f6ef7;">👍 ${fromName} liked your note</h2>
+            <p>On lead: <strong>${leadName}</strong></p>
+            <div style="background:#f5f7fa;border-left:4px solid #4f6ef7;padding:12px 16px;border-radius:4px;margin:16px 0;">
+              <p style="margin:0;color:#333;">${note.content}</p>
+            </div>
+            <a href="${process.env.APP_URL}/leads/${req.params.id}" style="display:inline-block;background:#4f6ef7;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:8px;">View Lead</a>
+            <p style="color:#999;font-size:12px;margin-top:24px;">REIFlow CRM</p>
+          </div>`
+        });
+      }
     }
     const count = await pool.query('SELECT COUNT(*) FROM note_likes WHERE note_id = $1', [req.params.noteId]);
     const liked = existing.rows.length === 0;
@@ -339,6 +391,37 @@ router.post('/:id/notes/:noteId/replies', auth, async (req, res) => {
       'SELECT r.*, u.name as author_name FROM note_replies r LEFT JOIN users u ON r.user_id = u.id WHERE r.id = $1',
       [result.rows[0].id]
     );
+
+    // Notify note author
+    const noteResult = await pool.query('SELECT user_id FROM notes WHERE id = $1', [req.params.noteId]);
+    const note = noteResult.rows[0];
+    const lead = await pool.query('SELECT property_address, owner_first_name, owner_last_name FROM leads WHERE id = $1', [req.params.id]);
+    const leadName = lead.rows[0]?.property_address || [lead.rows[0]?.owner_first_name, lead.rows[0]?.owner_last_name].filter(Boolean).join(' ') || 'a lead';
+    const fromUser = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id]);
+    const fromName = fromUser.rows[0]?.name || 'Someone';
+
+    if (note?.user_id) {
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await sendNotification(pool, resend, {
+        toUserId: note.user_id,
+        fromUserId: req.user.id,
+        leadId: req.params.id,
+        noteId: req.params.noteId,
+        message: `${fromName} replied to your note on ${leadName}`,
+        subject: `${fromName} replied to your note — REIFlow`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <h2 style="color:#4f6ef7;">💬 ${fromName} replied to your note</h2>
+          <p>On lead: <strong>${leadName}</strong></p>
+          <div style="background:#f5f7fa;border-left:4px solid #4f6ef7;padding:12px 16px;border-radius:4px;margin:16px 0;">
+            <p style="margin:0;color:#333;">${content}</p>
+          </div>
+          <a href="${process.env.APP_URL}/leads/${req.params.id}" style="display:inline-block;background:#4f6ef7;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:8px;">View Lead</a>
+          <p style="color:#999;font-size:12px;margin-top:24px;">REIFlow CRM</p>
+        </div>`
+      });
+    }
+
     res.status(201).json(reply.rows[0]);
   } catch (err) {
     console.error(err);
