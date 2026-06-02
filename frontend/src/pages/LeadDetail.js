@@ -42,92 +42,9 @@ const InfoRow = ({ label, value, link }) => {
       <span style={{ fontSize:12, color:'var(--text3)', flexShrink:0 }}>{label}</span>
       {link ? <a href={link} style={{ fontSize:13, color:'var(--accent2)', fontWeight:500, textAlign:'right' }}>{value}</a>
              : <span style={{ fontSize:13, color:'var(--text2)', fontWeight:500, textAlign:'right', lineHeight:1.5 }}>{value}</span>}
-      {/* Lead Navigator Sidebar */}
-      <div style={{
-        width: 260, minWidth: 260, background: 'var(--bg2)', borderLeft: '1px solid var(--border)',
-        display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, overflow: 'hidden'
-      }}>
-        {/* Sidebar Header */}
-        <div style={{ padding: '14px 12px 10px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Lead Navigator</div>
-          {/* Member filter - admin only */}
-          {user?.role === 'admin' && (
-            <select className="select-filter" value={sideMember} onChange={e => setSideMember(e.target.value)}
-              style={{ width: '100%', fontSize: 12, marginBottom: 6 }}>
-              <option value="">All Members</option>
-              {sideUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
-          )}
-          {/* Sort buttons */}
-          <div style={{ display: 'flex', gap: 4 }}>
-            {[
-              { key: 'status', label: 'Stage' },
-              { key: 'next_task_date', label: 'Next Task' },
-              { key: 'updated_at', label: 'Updated' },
-            ].map(({ key, label }) => (
-              <button key={key} onClick={() => setSideSort(key)}
-                style={{
-                  flex: 1, padding: '4px 0', fontSize: 10, fontWeight: 600, border: '1px solid var(--border)',
-                  borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--font-body)',
-                  background: sideSort === key ? 'var(--accent)' : 'var(--bg3)',
-                  color: sideSort === key ? 'white' : 'var(--text3)',
-                  transition: 'all 0.15s',
-                }}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Lead List */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {sideLoading && <div style={{ padding: 16, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>Loading...</div>}
-          {!sideLoading && sideLeads.map(l => {
-            const isActive = l.id === id;
-            const taskDate = fmtTaskDate(l.next_task_date);
-            return (
-              <div key={l.id} onClick={() => navigate(`/leads/${l.id}`)}
-                style={{
-                  padding: '10px 12px', borderBottom: '1px solid var(--border)', cursor: 'pointer',
-                  background: isActive ? 'var(--accent-dim)' : 'transparent',
-                  borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-                  transition: 'background 0.1s',
-                }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg3)'; }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: isActive ? 'var(--accent2)' : 'var(--text)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {l.owner_first_name || ''} {l.owner_last_name || ''}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {l.property_address || 'No address'}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <span style={{
-                    fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 10,
-                    background: `${getStatusColor(l.status)}20`, color: getStatusColor(l.status)
-                  }}>{l.status}</span>
-                  {taskDate && (
-                    <span style={{ fontSize: 10, color: taskDate.color, fontWeight: 500 }}>
-                      📅 {taskDate.text}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {!sideLoading && sideLeads.length === 0 && (
-            <div style={{ padding: 16, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>No leads found</div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };
-
-const SectionHeading = ({ children }) => (
-  <div style={{ fontSize:10, fontWeight:700, color:'var(--text3)', letterSpacing:'0.07em', textTransform:'uppercase', margin:'14px 0 6px', paddingBottom:4, borderBottom:'2px solid var(--border)' }}>{children}</div>
-);
 
 export default function LeadDetail() {
   const { id } = useParams();
@@ -194,6 +111,20 @@ export default function LeadDetail() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { api.getUsers().catch(() => []).then(u => { setUsers(u || []); setSideUsers(u || []); }); }, []);
+
+  const getStatusColor = (s) => {
+    const map = { 'New Lead':'var(--accent)','Post-Appointment':'#f59e0b','Under Contract':'var(--purple)','Closed':'var(--green)','Dead':'#64748b' };
+    return map[s] || 'var(--accent)';
+  };
+
+  const fmtTaskDate = (d) => {
+    if (!d) return null;
+    const due = new Date(d);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+    const color = due < today ? 'var(--red)' : due < tomorrow ? 'var(--green)' : 'var(--text3)';
+    return { text: due.toLocaleDateString(), color };
+  };
 
   const loadSideLeads = React.useCallback(async () => {
     setSideLoading(true);
