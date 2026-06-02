@@ -46,6 +46,10 @@ const InfoRow = ({ label, value, link }) => {
   );
 };
 
+const SectionHeading = ({ children }) => (
+  <div style={{ fontSize:10, fontWeight:700, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.08em', padding:'10px 0 4px', marginTop:4 }}>{children}</div>
+);
+
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
