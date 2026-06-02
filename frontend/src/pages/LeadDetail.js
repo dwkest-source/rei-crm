@@ -72,7 +72,10 @@ export default function LeadDetail() {
   const [sideLeads, setSideLeads] = useState([]);
   const [sideUsers, setSideUsers] = useState([]);
   const [sideMember, setSideMember] = useState('');
-  const [sideSort, setSideSort] = useState('updated_at');
+  const [sideCollapsed, setSideCollapsed] = useState(false);
+  const [sideSort, setSideSort] = useState('next_task_date');
+  const [sideDir, setSideDir] = useState('asc');
+  const [sideStatus, setSideStatus] = useState('');
   const [sideLoading, setSideLoading] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
@@ -133,19 +136,17 @@ export default function LeadDetail() {
   const loadSideLeads = React.useCallback(async () => {
     setSideLoading(true);
     try {
-      const isAsc = sideSort.endsWith('_asc');
-      const sortKey = sideSort.replace('_asc', '');
-      const sortDir = isAsc ? 'asc' : (sortKey === 'next_task_date' ? 'asc' : 'desc');
       const data = await api.getLeads({
         limit: 100,
-        sortBy: sortKey,
-        sortDir,
+        sortBy: sideSort,
+        sortDir: sideDir,
         ...(sideMember ? { assigned_to: sideMember } : {}),
+        ...(sideStatus ? { status: sideStatus } : {}),
       });
       setSideLeads(data.leads || []);
     } catch(e) { console.error(e); }
     finally { setSideLoading(false); }
-  }, [sideSort, sideMember]);
+  }, [sideSort, sideDir, sideMember, sideStatus]);
 
   useEffect(() => { loadSideLeads(); }, [loadSideLeads]);
 
@@ -822,12 +823,23 @@ export default function LeadDetail() {
 
       {/* Lead Navigator Sidebar */}
       <div style={{
-        width: 260, minWidth: 260, background: 'var(--bg2)', borderLeft: '1px solid var(--border)',
-        display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, overflow: 'hidden'
+        width: sideCollapsed ? 36 : 260, minWidth: sideCollapsed ? 36 : 260,
+        background: 'var(--bg2)', borderLeft: '1px solid var(--border)',
+        display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, overflow: 'hidden',
+        transition: 'width 0.2s, min-width 0.2s',
       }}>
+        <div style={{ height: 60 }} />{/* spacer to align with status bar */}
         {/* Sidebar Header */}
-        <div style={{ padding: '14px 12px 10px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Lead Navigator</div>
+        <div style={{ padding: '10px 8px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button onClick={() => setSideCollapsed(c => !c)}
+            title={sideCollapsed ? 'Expand' : 'Collapse'}
+            style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer',
+              padding: '3px 5px', color: 'var(--text3)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            {sideCollapsed ? '»' : '«'}
+          </button>
+          {!sideCollapsed && <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Lead Navigator</div>}
+        </div>
+        {!sideCollapsed && <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
           {/* Member filter - admin only */}
           {user?.role === 'admin' && (
             <select className="select-filter" value={sideMember} onChange={e => setSideMember(e.target.value)}
@@ -836,34 +848,32 @@ export default function LeadDetail() {
               {sideUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
           )}
-          {/* Sort buttons */}
-          <div style={{ display: 'flex', gap: 4 }}>
-            {[
-              { key: 'status', label: 'Stage' },
-              { key: 'next_task_date', label: 'Next Task' },
-            ].map(({ key, label }) => (
-              <button key={key} onClick={() => {
-                if (sideSort === key) {
-                  setSideSort(key + (sideSort === key + '_asc' ? '' : '_asc'));
-                } else {
-                  setSideSort(key);
-                }
-              }}
-                style={{
-                  flex: 1, padding: '5px 4px', fontSize: 10, fontWeight: 600, border: '1px solid var(--border)',
-                  borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--font-body)',
-                  background: sideSort.startsWith(key) ? 'var(--accent)' : 'var(--bg3)',
-                  color: sideSort.startsWith(key) ? 'white' : 'var(--text3)',
-                  transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
-                }}>
-                {label} {sideSort.startsWith(key) ? (sideSort.endsWith('_asc') ? '↑' : '↓') : <span style={{opacity:0.4}}>↕</span>}
-              </button>
+          {/* Stage filter dropdown */}
+          <select value={sideStatus} onChange={e => setSideStatus(e.target.value)}
+            className="select-filter" style={{ width: '100%', fontSize: 11, marginBottom: 4 }}>
+            <option value="">All Stages</option>
+            {['New Lead','Post-Appointment','Under Contract','Closed','Dead'].map(s => (
+              <option key={s} value={s}>{s}</option>
             ))}
-          </div>
-        </div>
+          </select>
+          {/* Next Task sort */}
+          <button onClick={() => {
+              setSideSort('next_task_date');
+              setSideDir(d => d === 'asc' ? 'desc' : 'asc');
+            }}
+            style={{
+              width: '100%', padding: '5px 8px', fontSize: 11, fontWeight: 600, border: '1px solid var(--border)',
+              borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--font-body)',
+              background: sideSort === 'next_task_date' ? 'var(--accent)' : 'var(--bg3)',
+              color: sideSort === 'next_task_date' ? 'white' : 'var(--text3)',
+              transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+            }}>
+            Next Task {sideDir === 'asc' ? '↑' : '↓'}
+          </button>
+        </div>}
 
         {/* Lead List */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        {!sideCollapsed && <div style={{ flex: 1, overflowY: 'auto' }}>
           {sideLoading && <div style={{ padding: 16, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>Loading...</div>}
           {!sideLoading && sideLeads.map(l => {
             const isActive = l.id === id;
@@ -902,7 +912,7 @@ export default function LeadDetail() {
           {!sideLoading && sideLeads.length === 0 && (
             <div style={{ padding: 16, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>No leads found</div>
           )}
-        </div>
+        </div>}
       </div>
     </div>
   );
