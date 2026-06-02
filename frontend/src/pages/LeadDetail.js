@@ -302,7 +302,7 @@ export default function LeadDetail() {
     <div style={{ display:"flex", minHeight:"100vh", background:"var(--bg)", alignItems:"flex-start" }}>
     <div className="page" style={{ flex:1, minWidth:0, padding:"20px 20px 28px 28px" }}>
       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
-        <button className="btn-icon" onClick={() => navigate(-1)}><ArrowLeft /></button>
+        <button className="btn-icon" onClick={() => navigate('/leads')} /* nav-fix */><ArrowLeft /></button>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
             <h1 style={{ fontFamily:'var(--font-display)', fontSize:22, fontWeight:700 }}>{ownerName}</h1>
@@ -828,6 +828,7 @@ export default function LeadDetail() {
         display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, overflow: 'hidden',
         transition: 'width 0.2s, min-width 0.2s',
       }}>
+        <div style={{ height: 60 }} />{/* spacer to align with status bar */}
         {/* Sidebar Header */}
         <div style={{ padding: '10px 8px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
           <button onClick={() => setSideCollapsed(c => !c)}
@@ -855,31 +856,20 @@ export default function LeadDetail() {
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          {/* Sort buttons row */}
-          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-            {[
-              { key: 'next_task_date', label: 'Next Task' },
-              { key: 'updated_at', label: 'Updated' },
-            ].map(({ key, label }) => (
-              <button key={key} onClick={() => {
-                if (sideSort === key) {
-                  setSideDir(d => d === 'asc' ? 'desc' : 'asc');
-                } else {
-                  setSideSort(key);
-                  setSideDir(key === 'next_task_date' ? 'asc' : 'desc');
-                }
-              }}
-                style={{
-                  flex: 1, padding: '5px 4px', fontSize: 10, fontWeight: 600, border: '1px solid var(--border)',
-                  borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--font-body)',
-                  background: sideSort === key ? 'var(--accent)' : 'var(--bg3)',
-                  color: sideSort === key ? 'white' : 'var(--text3)',
-                  transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
-                }}>
-                {label} {sideSort === key ? (sideDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.4}}>↕</span>}
-              </button>
-            ))}
-          </div>
+          {/* Next Task sort */}
+          <button onClick={() => {
+              setSideSort('next_task_date');
+              setSideDir(d => d === 'asc' ? 'desc' : 'asc');
+            }}
+            style={{
+              width: '100%', padding: '5px 8px', fontSize: 11, fontWeight: 600, border: '1px solid var(--border)',
+              borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--font-body)',
+              background: sideSort === 'next_task_date' ? 'var(--accent)' : 'var(--bg3)',
+              color: sideSort === 'next_task_date' ? 'white' : 'var(--text3)',
+              transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+            }}>
+            Next Task {sideDir === 'asc' ? '↑' : '↓'}
+          </button>
         </div>}
 
         {/* Lead List */}
@@ -927,3 +917,4 @@ export default function LeadDetail() {
     </div>
   );
 }
+ 
