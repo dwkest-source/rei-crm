@@ -39,6 +39,7 @@ export const api = {
   updateLead: (id, body) => request(`/leads/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteLead: (id) => request(`/leads/${id}`, { method: 'DELETE' }),
   getStats: () => request('/leads/stats/overview'),
+  importLeads: (leads) => request('/leads/import', { method: 'POST', body: JSON.stringify({ leads }) }),
 
   // Notifications
   getNotifications: () => request('/notifications'),
