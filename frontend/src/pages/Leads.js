@@ -73,9 +73,7 @@ export default function Leads() {
           <h1 className="page-title">Leads</h1>
           <p className="page-subtitle">{total} total leads in your pipeline</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          <Plus size={15} /> Add Lead
-        </button>
+
       </div>
 
       <div className="filter-bar">
@@ -100,6 +98,9 @@ export default function Leads() {
         {(search || status || source || memberFilter) && (
           <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setStatus(''); setSource(''); setMemberFilter(''); ['leads_search','leads_status','leads_source','leads_memberFilter'].forEach(k => sessionStorage.removeItem(k)); }}>Clear</button>
         )}
+        <button className="btn btn-primary" onClick={() => setShowModal(true)} style={{ marginLeft: 'auto' }}>
+          <Plus size={15} /> Add Lead
+        </button>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

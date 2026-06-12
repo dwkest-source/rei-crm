@@ -60,7 +60,7 @@ export default function Layout() {
       </aside>
 
       <main className="main-content">
-        <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', padding:'12px 32px 0', gap:8 }}>
+        <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', padding:'10px 32px', gap:8, position:'sticky', top:0, zIndex:100, background:'var(--bg)', borderBottom:'1px solid var(--border)' }}>
           <NotificationBell />
         </div>
         <Outlet />
