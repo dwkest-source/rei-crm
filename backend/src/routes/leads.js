@@ -75,6 +75,8 @@ router.get('/', auth, async (req, res) => {
             ? `next_task_date ${sortDir === 'asc' ? 'ASC NULLS LAST' : 'DESC NULLS LAST'}`
             : sortBy === 'owner'
             ? `l.owner_last_name ${sortDir === 'asc' ? 'ASC' : 'DESC'}, l.owner_first_name ${sortDir === 'asc' ? 'ASC' : 'DESC'}`
+            : sortBy === 'created_at'
+            ? `l.created_at ${sortDir === 'asc' ? 'ASC' : 'DESC'}`
             : `l.updated_at ${sortDir === 'asc' ? 'ASC' : 'DESC'}`
         }
         LIMIT $${i} OFFSET $${i+1}

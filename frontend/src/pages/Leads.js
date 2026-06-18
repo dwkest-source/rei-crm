@@ -116,11 +116,12 @@ export default function Leads() {
                 <th>Open Tasks</th>
                 <SortHeader field="next_task_date">Next Task</SortHeader>
                 <SortHeader field="updated_at">Updated</SortHeader>
+                <SortHeader field="created_at">Created</SortHeader>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={8} className="table-empty">Loading...</td></tr>}
-              {!loading && leads.length === 0 && <tr><td colSpan={8} className="table-empty">No leads found. Add your first lead!</td></tr>}
+              {loading && <tr><td colSpan={9} className="table-empty">Loading...</td></tr>}
+              {!loading && leads.length === 0 && <tr><td colSpan={9} className="table-empty">No leads found. Add your first lead!</td></tr>}
               {leads.map(lead => (
                 <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)}>
                   <td style={{ fontWeight: 600 }}>{lead.owner_first_name || ''} {lead.owner_last_name || ''}</td>
@@ -133,6 +134,7 @@ export default function Leads() {
                     {lead.next_task_date ? new Date(lead.next_task_date).toLocaleDateString() : '—'}
                   </td>
                   <td style={{ color: 'var(--text3)', fontSize: 12 }}>{new Date(lead.updated_at).toLocaleDateString()}</td>
+                  <td style={{ color: 'var(--text3)', fontSize: 12 }}>{lead.created_at ? new Date(lead.created_at).toLocaleDateString() : '—'}</td>
                 </tr>
               ))}
             </tbody>
