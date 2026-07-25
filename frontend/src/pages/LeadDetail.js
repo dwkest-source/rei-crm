@@ -203,7 +203,13 @@ export default function LeadDetail() {
   const handleAddNote = async (e) => {
     e.preventDefault(); if (!noteText.trim()) return; setAddingNote(true);
     try {
-      const note = await api.addNote(id, { content: noteText, mentions });
+      // Extract all @mentions from text to catch any missed by the dropdown
+      const mentionedNames = [...noteText.matchAll(/@([A-Za-z]+(?:\s+[A-Za-z]+)*)/g)].map(m => m[1].trim().toLowerCase());
+      const allMentionIds = [...new Set([
+        ...mentions,
+        ...users.filter(u => mentionedNames.some(n => u.name.toLowerCase().startsWith(n) || n.startsWith(u.name.toLowerCase().split(' ')[0].toLowerCase()) && u.name.toLowerCase().includes(n.split(' ').slice(-1)[0].toLowerCase()))).map(u => u.id)
+      ])];
+      const note = await api.addNote(id, { content: noteText, mentions: allMentionIds });
       setLead(l => ({ ...l, notes: [note, ...l.notes] }));
       setNoteText('');
       setMentions([]);
@@ -860,6 +866,7 @@ export default function LeadDetail() {
             {[
               { key: 'next_task_date', label: 'Next Task' },
               { key: 'updated_at', label: 'Updated' },
+              { key: 'created_at', label: 'Created' },
             ].map(({ key, label }) => (
               <button key={key} onClick={() => {
                 if (sideSort === key) {
@@ -870,7 +877,7 @@ export default function LeadDetail() {
                 }
               }}
                 style={{
-                  flex: 1, padding: '5px 4px', fontSize: 10, fontWeight: 600, border: '1px solid var(--border)',
+                  flex: 1, padding: '4px 2px', fontSize: 9, fontWeight: 600, border: '1px solid var(--border)',
                   borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--font-body)',
                   background: sideSort === key ? 'var(--accent)' : 'var(--bg3)',
                   color: sideSort === key ? 'white' : 'var(--text3)',
