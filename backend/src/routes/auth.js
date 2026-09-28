@@ -61,10 +61,10 @@ router.post('/users', auth, adminOnly, async (req, res) => {
   }
 });
 
-// List all users (admin only)
-router.get('/users', auth, adminOnly, async (req, res) => {
+// List all users (any authenticated user — needed for @mention autocomplete)
+router.get('/users', auth, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC');
+    const result = await pool.query('SELECT id, name, role FROM users ORDER BY name ASC');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
